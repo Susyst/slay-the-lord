@@ -1,0 +1,61 @@
+<title>Pokemon? Slay the Lord</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one fullscreen 240x160 canvas, scaled crisp and centered on black; touch controls float over it on phones. */
+:root {
+  --void: #000000;
+  --pad-fill: rgba(255, 255, 255, 0.14);
+  --pad-edge: rgba(255, 255, 255, 0.32);
+  --pad-ink: rgba(255, 255, 255, 0.85);
+  --font-ui: system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background: var(--void);
+  display: flex; align-items: center; justify-content: center;
+  padding-left: max(0px, env(safe-area-inset-left, 0px));
+  padding-right: max(0px, env(safe-area-inset-right, 0px));
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; background: var(--void); }
+.touch { position: fixed; inset: 0; pointer-events: none; }
+.touch[hidden] { display: none !important; }
+.touch button {
+  position: absolute; pointer-events: auto; border: 2px solid var(--pad-edge); background: var(--pad-fill);
+  color: var(--pad-ink); font: 700 15px var(--font-ui); border-radius: 50%; width: 56px; height: 56px;
+}
+.touch button:active { background: var(--pad-edge); }
+.touch .d { border-radius: 10px; width: 50px; height: 50px; }
+#t-up { left: calc(68px + env(safe-area-inset-left, 0px)); bottom: calc(126px + env(safe-area-inset-bottom, 0px)); }
+#t-down { left: calc(68px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+#t-left { left: calc(14px + env(safe-area-inset-left, 0px)); bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+#t-right { left: calc(122px + env(safe-area-inset-left, 0px)); bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+#t-a { right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+#t-b { right: calc(84px + env(safe-area-inset-right, 0px)); bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+#t-start { right: calc(18px + env(safe-area-inset-right, 0px)); top: calc(14px + env(safe-area-inset-top, 0px)); width: 76px; height: 30px; border-radius: 15px; font-size: 11px; letter-spacing: .08em; }
+</style>
+
+<canvas id="screen" width="240" height="160" aria-label="Pokemon? Slay the Lord game screen"></canvas>
+<div class="touch" id="touch" hidden>
+  <button class="d" id="t-up" data-key="up" aria-label="Up">▲</button>
+  <button class="d" id="t-left" data-key="left" aria-label="Left">◀</button>
+  <button class="d" id="t-right" data-key="right" aria-label="Right">▶</button>
+  <button class="d" id="t-down" data-key="down" aria-label="Down">▼</button>
+  <button id="t-b" data-key="b" aria-label="B">B</button>
+  <button id="t-a" data-key="a" aria-label="A">A</button>
+  <button id="t-start" data-key="start" aria-label="Start">START</button>
+</div>
+
+<script src="font.js"></script>
+<script src="audio.js"></script>
+<script src="art.js"></script>
+<script src="chars.js"></script>
+<script src="monsprites.js"></script>
+<script src="terrain.js"></script>
+<script src="buildings.js"></script>
+<script src="data.js"></script>
+<script src="battle.js"></script>
+<script src="world.js"></script>
+<script src="regions.js"></script>
+<script src="main.js"></script>
