@@ -218,6 +218,26 @@ function shWall(x, y, s) {
 }
 
 // ---------------------------------------------------------------- structures painted per tile
+// ---- Soul Station: a rune-carved pedestal with a link crystal floating over it; links set aside wait inside
+function paintSoulStation(P, X, Y, s) {
+  const px = (x, y, c) => P.set(X + x, Y + y, c);
+  for (let y = 12; y < 17; y++) for (let x = 0; x < 16; x++) {                                           // a ring of flat stones set into the ground
+    const d = Math.hypot((x - 7.5) / 8.5, (y - 14) / 2.6); if (d > 1) continue;
+    px(x, y, d > 0.86 ? C.ink : grad(C.stone, 0.18 + (h2(X + x, Y + y, s) - 0.5) * 0.2 + (y < 14 ? 0.08 : 0)));
+  }
+  for (let y = 4; y < 15; y++) for (let x = 1; x < 15; x++) {                                           // the pedestal: stone, wider at the foot
+    const hw = y > 12 ? 6 : y > 11 ? 5 : y > 5 ? 4 : 5; if (Math.abs(x - 7.5) > hw) continue;
+    if (Math.abs(x - 7.5) > hw - 1 || y === 14 || y === 4 || y === 12 || y === 6) { px(x, y, C.ink); continue; }
+    px(x, y, grad(C.stone, 0.46 + (7.5 - x) * 0.035 + (y > 12 ? -0.12 : y < 6 ? 0.12 : 0) + (h2(X + x, Y + y, s) - 0.5) * 0.14));
+  }
+  for (const [x, y] of [[6, 9], [9, 9], [7, 10], [8, 10], [7, 8], [8, 8], [5, 10], [10, 10]]) px(x, y, hx("#6af0e4"));     // the carved rune, lit
+  for (let y = -7; y < 4; y++) for (let x = 3; x < 13; x++) {                                           // the crystal, floating
+    const d = Math.abs(x - 7.5) / 4 + Math.abs(y + 1.5) / 5.5; if (d > 1) continue;
+    px(x, y, d > 0.84 ? C.ink : d > 0.55 ? hx("#1ec8ba") : d > 0.28 ? hx("#6af0e4") : hx("#fffdf0"));
+  }
+  px(5, -3, hx("#fffdf0")); px(5, -2, hx("#fffdf0"));                                                   // a facet catching light
+  for (const [x, y] of [[1, -1], [14, 1], [2, 5], [13, -4], [0, 7], [15, 6]]) px(x, y, hx("#6af0e4"));    // motes
+}
 function paintTileDetail(P, c, tx, ty, s, map) {
   const X = tx * 16, Y = ty * 16, px = (lx, ly, col) => P.set(X + lx, Y + ly, col);
   const tile = (x, y) => (map.m[y] && map.m[y][x]) || "T";
@@ -233,6 +253,7 @@ function paintTileDetail(P, c, tx, ty, s, map) {
     }
     for (let i = 0; i < 5; i++) { const ry = 16 - hgt + 4 + i * 3, rx = 7 + ((i * 3 + tx) % 3) - 1; px(rx, ry, C.rune[1]); px(rx + (i % 2 ? 1 : -1), ry, C.rune[0]); px(rx, ry + 1, C.rune[i === 2 ? 2 : 0]); }
     px(8, 16 - hgt - 1, C.ink);
+  } else if (c === "U") { paintSoulStation(P, X, Y, s);
   } else if (c === "I") {    // a hall column: fluted shaft two tiles tall, gilt capital and base
     for (let y = -14; y < 16; y++) for (let x = 2; x < 14; x++) {
       const cap = y < -10 || y > 12, hw = cap ? 6 : 4.5, cx = 8;
@@ -430,6 +451,7 @@ function paintMapInner(map) {
       if (NATURAL.has(cw)) c = cw;
     }
     c = baseOf(c, map, Math.floor(x / 16), Math.floor(y / 16));
+    if (c === "U") { const ty = Math.floor(y / 16), tx = Math.floor(x / 16); c = baseOf(tileAt(x, Math.min(Hp - 1, y + 16)), map, tx, ty + 1); if (c === "U" || c === "T") c = "."; }   // the station stands on whatever ground it was raised on
     let col;
     if (c === "T" || c === "Q") col = C.floor;
     else if (c === ",") col = shPath(x, y, s);
@@ -469,10 +491,10 @@ function paintMapInner(map) {
   // 2) structures
   for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
     const c = m[ty][tx];
-    P.curBase = "FSCdrsYIA".includes(c) ? ty * 16 + 15 : 0;
-    if ("FSCHcRdwfrsgYIAG".includes(c)) paintTileDetail(P, c, tx, ty, s + tx * 3 + ty, map);
+    P.curBase = "FSCdrsYIAU".includes(c) ? ty * 16 + 15 : 0;
+    if ("FSCHcRdwfrsgYIAGU".includes(c)) paintTileDetail(P, c, tx, ty, s + tx * 3 + ty, map);
     P.curBase = 0;
-    if ("FSCrsYIAG".includes(c)) for (let y = ty * 16; y < ty * 16 + 16; y++) for (let x = tx * 16; x < tx * 16 + 16; x++) P.solid[y * Wp + x] = 1;
+    if ("FSCrsYIAGU".includes(c)) for (let y = ty * 16; y < ty * 16 + 16; y++) for (let x = tx * 16; x < tx * 16 + 16; x++) P.solid[y * Wp + x] = 1;
   }
   // 3) static props (houses, tents, gate, banners, signs) drawn into a layer, night-graded and composited
   const layer = document.createElement("canvas"); layer.width = Wp; layer.height = Hp;
@@ -542,6 +564,7 @@ function paintMapInner(map) {
     const c = m[ty][tx], X = tx * 16 + 8, Y = ty * 16 + 8;
     if (c === "r") lights.push({ x: X, y: Y - 6, r: 30, a: 0.8, col: [60, 230, 215] });
     else if (c === "G") lights.push({ x: X, y: Y + 22, r: 36, a: 0.7, col: [214, 150, 255] });
+    else if (c === "U") lights.push({ x: X + 8, y: Y + 4, r: 26, a: 0.75, col: [90, 230, 215] });
     else if (c === "s") lights.push({ x: X, y: Y - 4, r: 32, a: 0.9 });
     else if (c === "g") lights.push({ x: X, y: Y, r: 16, a: 0.6, col: [110, 240, 170] });
   }

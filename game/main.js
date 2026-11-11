@@ -40,13 +40,21 @@ const Game = {
 };
 
 // ---------------------------------------------------------------- scaling
+// The canvas fills the whole window, edge to edge, with no bars: on a 16:9 screen the picture is stretched a little wider than the
+// game's 3:2 frame, which is what a GBA upscaler does too. Pixels stay crisp through image-rendering: pixelated.
 function fit() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  let s = Math.min(vw / W, vh / H);
-  if (s >= 2) s = Math.floor(s);
-  cv.style.width = Math.round(W * s) + "px"; cv.style.height = Math.round(H * s) + "px";
+  cv.style.width = window.innerWidth + "px"; cv.style.height = window.innerHeight + "px";
 }
 addEventListener("resize", fit); fit();
+// F11 / F toggles fullscreen: through the app window when running as a desktop app, otherwise through the browser
+async function toggleFullscreen() {
+  try {
+    const T = window.__TAURI__ && window.__TAURI__.window;
+    if (T) { const w = T.getCurrentWindow(); await w.setFullscreen(!(await w.isFullscreen())); return; }
+    if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen();
+  } catch (e) {}
+}
+addEventListener("keydown", e => { if (e.key === "F11" || (e.key === "f" && !e.repeat && Game.scene !== "name")) { e.preventDefault(); toggleFullscreen(); } });
 if (matchMedia("(pointer: coarse)").matches) document.getElementById("touch").hidden = false;
 
 // ---------------------------------------------------------------- input
@@ -500,11 +508,12 @@ async function endingScene() {
 const STEP = 1000 / 60;
 let lastT = 0, acc = 0;
 function tick() {
+  const ws = waiters.splice(0);                      // scripts that waited on the previous step wake after this one, so a key press is never seen twice
   Game.keys = pressed; pressed = new Set(); Game.tap = tapNext; tapNext = null; Game.ticks++;
   if (Game.scene === "world" || Game.scene === "battle") Game.playtime += 1 / 60;
   if (Game.scene === "world" && World.map) World.update();
   else if (Game.scene === "battle" && Battle.active && Battle.mode !== "script") Battle.update();
-  const ws = waiters.splice(0); ws.forEach(r => r());
+  ws.forEach(r => r());
 }
 function render(t) {
   ctx.imageSmoothingEnabled = false;

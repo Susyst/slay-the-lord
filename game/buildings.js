@@ -256,6 +256,7 @@ function buildInfirmary() {
   m[9][7] = "o";
   for (const y of [3, 5, 7]) { m[y][1] = "B"; m[y][2] = "B"; }
   rect(m, 10, 4, 13, 4, "D");                        // apothecary counter
+  m[3][8] = "U";                                     // soul station
   m[8][12] = "X"; m[8][13] = "X";                    // barrels
   m[3][13] = "X";                                    // cabinet corner
   return {
@@ -458,6 +459,8 @@ function paintInfirmary(map) {
     put(x, y, y === 144 ? ink : grad(C.wood, 0.25 + ((x + y) % 6 === 0 ? -0.1 : 0)));
   }
   for (let y = 144; y < Hp; y++) { put(111, y, C.wood[4]); put(128, y, C.wood[1]); }
+  // the soul station, if the room has one
+  map.m.forEach((row, ty) => row.forEach((c, tx) => { if (c === "U") { paintSoulStation(P, tx * 16, ty * 16, s + tx); lights.push({ x: tx * 16 + 8, y: ty * 16 + 4, r: 28, a: 0.8, col: [90, 230, 215] }); } }));
   // warm candlelit air; light pools on the floor
   
   for (const L of lights) {

@@ -38,6 +38,7 @@ Object.assign(TRAINERS, {
 function buildHollow() {
   const m = blankMap(56, 24, ".");
   rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 22, 55, 23, "T"); rect(m, 0, 0, 1, 23, "T"); rect(m, 54, 0, 55, 23, "T");
+  m[11][21] = "U";                                   // soul station at the waystation
   rect(m, 2, 2, 8, 6, "T"); rect(m, 2, 17, 10, 21, "T"); rect(m, 46, 15, 53, 21, "T"); rect(m, 47, 2, 53, 7, "T");
   // the road: east entrance, a bend north round the pond, the waystation, the west arch
   rect(m, 46, 12, 55, 13, ","); rect(m, 38, 12, 46, 13, ","); rect(m, 38, 9, 39, 13, ","); rect(m, 32, 9, 39, 10, ",");
@@ -107,6 +108,7 @@ function buildShrines() {
   for (const [x, y] of [[3, 6], [50, 6], [12, 20], [46, 20], [3, 13], [20, 20]]) { m[y][x] = "Q"; m[y][x + 1] = "Q"; m[y + 1][x] = "Q"; m[y + 1][x + 1] = "Q"; }
   const tents = [{ x: 27, y: 1, w: 3, h: 3, kind: "tent", side: "allied", door: [28, 4], clutter: [["crate", 5], ["barrel", 41]], text: "Shrine refuge. Allied scouts sleep in shifts here, under the eyes of the old stone keepers." }];
   for (let x = 27; x <= 29; x++) for (let y = 2; y <= 4; y++) m[y][x] = ".";
+  m[5][32] = "U";                                    // soul station beside the refuge
   return {
     id: "shrines", name: "THE HIGH SHRINES", music: "route", m, tents, bg: "shrine", mood: "night", pal: "shrine", tree: "pine", seed: 61,
     props: [{ kind: "fire", x: 31, y: 5 }, { kind: "sign", x: 50, y: 11, text: "THE HIGH SHRINES. The stair climbs west to the summit gate. Lanterns mark the safe path." },

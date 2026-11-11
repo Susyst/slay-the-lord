@@ -3,7 +3,7 @@ const ACTOR_LAYER = document.createElement("canvas"); ACTOR_LAYER.width = 240; A
 const OCC = (() => { const c = document.createElement("canvas"); c.width = c.height = 48; return { c, ctx: c.getContext("2d", { willReadFrequently: true }) }; })();
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const OPP = { up: "down", down: "up", left: "right", right: "left" };
-const SOLID = new Set(["T", "Q", "B", "D", "F", "S", "C", "W", "X", "K", "R", "d", "w", "M", "k", "r", "s", "Y", "I", "A", "G"]);
+const SOLID = new Set(["T", "Q", "B", "D", "F", "S", "C", "W", "X", "K", "R", "d", "w", "M", "k", "r", "s", "Y", "I", "A", "G", "U"]);
 
 function blankMap(w, h, fill) { return Array.from({ length: h }, () => Array(w).fill(fill)); }
 function rect(m, x0, y0, x1, y1, c) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (m[y] && x >= 0 && x < m[0].length) m[y][x] = c; }
@@ -45,6 +45,7 @@ function buildCamp() {
 function buildFront() {
   const m = blankMap(56, 22, ".");
   rect(m, 38, 2, 55, 19, "b");
+  m[10][30] = "U";                                   // soul station beside the outpost medic
   rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 20, 55, 21, "T"); rect(m, 54, 0, 55, 21, "T");
   rect(m, 46, 3, 52, 8, ";"); rect(m, 25, 14, 33, 18, ";"); rect(m, 39, 13, 42, 17, ";");
   rect(m, 36, 2, 37, 19, "W");
@@ -203,6 +204,7 @@ const World = {
     if (this.map.props.some(q => q.kind === "gate" && tx >= q.x && tx <= q.x + 1 && ty >= q.y && ty <= q.y + 1))
       return this.run(async () => { await say(Game.flags.beat_general ? "The fortress gate hangs open. Beyond it, the Hollow Wood. The road to Hamon begins here." : "A massive iron gate. It won't budge."); });
     const ahead = this.tile(tx, ty);
+    if (ahead === "U") return this.run(async () => { Sound.fx("capture"); await this.vaultScreen(); });
     if (ahead === "D") {           // talk across a counter
       const behind = this.npcAt(tx + dx, ty + dy) || this.map.npcs.find(n => n.talk === "heal" && Math.abs(n.x - tx) <= 4 && Math.abs(n.y - ty) <= 2);
       if (behind) { behind.dir = behind.y < p.y ? "down" : OPP[p.dir]; return this.run(() => this.talk(behind)); }
@@ -232,11 +234,7 @@ const World = {
       Sound.fx("heal"); Game.checkpoint = { map: this.map.id, ...this.map.heal }; Game.autosave();
       await wait(40);
       await say("Your squad is patched up and ready to fight!");
-      if (Game.vault.length || Game.party.length > 1) {
-        await say("MEDIC: Want to open the Soul Vault? Links you set aside wait here, safe, until you call them back.");
-        if ((await choose(["OPEN VAULT", "NOT NOW"])) === 0) { TB.close(); await this.vaultScreen(); }
-        else TB.close();
-      }
+      if (!Game.flags.sawStation && (Game.vault.length || Game.party.length > 1)) { Game.flags.sawStation = true; await say("MEDIC: The crystal on the pedestal there is a SOUL STATION. Links you set aside wait inside it, safe, until you call them back."); }
       return;
     }
     if (n.talk === "voss") return this.vossTalk();
@@ -371,7 +369,19 @@ const World = {
       else if (o === "BAG") { this.menu = "bag"; this.lcur = 0; }
       else if (o === "SAVE") { const ok = Game.save(); this.menu = null; this.run(async () => { Sound.fx(ok ? "heal" : "bump"); await say(ok ? `Campaign saved to slot ${Game.slot + 1}.  ${fmtTime(Game.playtime)} in the field.` : "The save could not be written."); }); }
       else if (o === "SOUND") { Game.toggleSound(); }
+      else if (o === "SCREEN") { this.menu = null; toggleFullscreen(); }
       else if (o === "BOARD" || o === "DISMOUNT") { Game.riding = !Game.riding; Sound.fx(Game.riding ? "capture" : "blip"); this.menu = null; }
+      else if (o === "EXIT") {       // back to the title, with or without saving
+        this.menu = null;
+        this.run(async () => {
+          const app = !!(window.__TAURI__ && window.__TAURI__.window), opts = app ? ["SAVE & QUIT", "QUIT", "CANCEL"] : ["SAVE & EXIT", "EXIT", "CANCEL"];
+          const c = await choose(opts);
+          if (c === 2) { TB.close(); return; }
+          if (c === 0) Game.save();
+          if (app) { try { await window.__TAURI__.window.getCurrentWindow().close(); } catch (e) {} }   // the desktop app: close the window
+          TB.close(); Sound.hush(); Sound.stop(); await fadeOut(); Game.riding = false; this.busy = false; titleScene();
+        });
+      }
       else this.menu = null;
     } else if (this.menu === "squad") {
       if (this.sqOpt >= 0) {                                    // INFO / MOVE picker for the highlighted mon
@@ -445,7 +455,7 @@ const World = {
     }
     Game.drawOverride = null; Game.autosave();
   },
-  menuOpts() { return Game.flags.board && !this.map.interior ? ["SQUAD", "BAG", Game.riding ? "DISMOUNT" : "BOARD", "SAVE", "SOUND", "EXIT"] : ["SQUAD", "BAG", "SAVE", "SOUND", "EXIT"]; },
+  menuOpts() { return Game.flags.board && !this.map.interior ? ["SQUAD", "BAG", Game.riding ? "DISMOUNT" : "BOARD", "SAVE", "SOUND", "SCREEN", "EXIT"] : ["SQUAD", "BAG", "SAVE", "SOUND", "SCREEN", "EXIT"]; },
 
   // ---------------------------------------------------------------- drawing
   camera() {
