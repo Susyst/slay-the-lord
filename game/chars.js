@@ -3,8 +3,8 @@
 // Parts are filled as flat regions, then shaded (light from top-left), separated by selective outlines,
 // and wrapped in a 1px dark outline.
 const CW = 48, LIFT = -2;
-// Vertical squash: body compresses toward the feet, head a little less, so everyone stands ~28px tall.
-const FEET_Y = 43, NECK_Y = 17, KB = 0.78, KH = 0.9, NECK_S = FEET_Y - (FEET_Y - NECK_Y) * KB;
+// Vertical squash: body compresses toward the feet, head a little less, so everyone stands ~24px tall.
+const FEET_Y = 43, NECK_Y = 17, KB = 0.66, KH = 0.80, NECK_S = FEET_Y - (FEET_Y - NECK_Y) * KB;
 const SY = y => y >= NECK_Y ? FEET_Y - (FEET_Y - y) * KB : NECK_S - (NECK_Y - y) * KH;                 // canvas size; feet sit on y=43, body centred on x=24
 const OUTLINE = "#0d0a10";
 
@@ -242,19 +242,19 @@ function figFront(g, L, P) {
   if (P.spearBack && L.weapon) glaive(g, L, ...P.spear);
   g.ox = 0; g.oy = 0;
   legs(g, L, P.la, P.lb, false);
-  g.ox = D; g.oy = U + LIFT;
+  g.ox = D + (P.TW || 0); g.oy = U + LIFT + (P.SH || 0);
   torsoFront(g, L);
   arm(g, L, ...P.aa);
   arm(g, L, ...P.ab);
   if (!P.spearBack && L.weapon) { glaive(g, L, ...P.spear); const h = P.aa[2]; g.rect(RAMP.gloves, Math.round(h[0]) - 1, Math.round(h[1]) - 1, Math.round(h[0]) + 1, Math.round(h[1])); if (P.twoHand) { const h2 = P.ab[2]; g.rect(RAMP.gloves, Math.round(h2[0]) - 1, Math.round(h2[1]) - 1, Math.round(h2[0]) + 1, Math.round(h2[1])); } }
   if (L.pauldron) pauldron(g, L, 1);
   if (L.drape && L.cloak) g.poly(L.cloak, [[17.4, 20], [19, 18.8], [23, 19], [23.2, 22], [21.6, 25.4], [20.4, 28.2], [19.2, 26.6], [17.8, 28.6], [16.4, 25], [16.4, 22]]);
-  g.ox = D + (P.HX || 0); g.oy = U + LIFT + (P.HY || 0);
+  g.ox = D + (P.TW || 0) * 0.35 + (P.HX || 0); g.oy = U + LIFT + (P.HY || 0);
   headFront(g, L, P);
   if (L.accent) {
     g.poly(L.accent, L.head === "hood" ? [[20.4, 16.6], [27.6, 16.6], [28.1, 18.6], [27.6, 20.6], [20.4, 20.6], [19.9, 18.6]]
                                        : [[20.6, 18.4], [27.4, 18.4], [27.6, 20.6], [20.4, 20.6]]);
-    g.ox = D; g.oy = U + LIFT;
+    g.ox = D + (P.TW || 0); g.oy = U + LIFT + (P.SH || 0);
     const t = P.tail || 0;
     g.poly(L.accent, [[26, 19.6], [27.6, 20], [27.6 + t, 23.6], [26.8 + t, 26], [25.6, 23.4]]);
   }
@@ -265,7 +265,7 @@ function figBack(g, L, P) {
   const U = P.U, D = P.DX, sw = P.sway;
   g.ox = 0; g.oy = 0;
   legs(g, L, P.la, P.lb, false);
-  g.ox = D; g.oy = U + LIFT;
+  g.ox = D + (P.TW || 0); g.oy = U + LIFT + (P.SH || 0);
   if (P.raised && L.weapon) { arm(g, L, ...P.aa); arm(g, L, ...P.ab); glaive(g, L, ...P.spear); }
   g.poly(L.tunic, [[19.5, 20], [28.5, 20], [28, 26], [27.5, 30.5], [20.5, 30.5], [20, 26]]);
   g.poly(RAMP.gloves, [[20, 28.6], [28, 28.6], [28, 30.6], [20, 30.6]]);
@@ -299,6 +299,7 @@ function figSide(g, L, P) {
   g.ox = 0; g.oy = 0;
   legs(g, L, P.la, null, true);
   g.ox = D; g.oy = U + LIFT;
+  g.oy = U + LIFT + (P.SH || 0);
   g.poly(L.tunic, [[21.4, 20], [26.6, 20], [27.2, 25], [26.6, 30.6], [21.4, 30.6], [21, 25]]);
   g.poly(RAMP.leather, [[21.6, 22], [26.8, 22], [26.6, 29.4], [21.8, 29.4]]);
   g.poly(L.armor, [[23.6, 20.4], [27, 20.8], [27.4, 24.6], [25, 25.8], [23.4, 24]]);
@@ -334,15 +335,23 @@ function posesFront() {
   const base = (o) => ({ U: 0, DX: 0, sway: 0, la: FL.a, lb: FL.b, aa: ARM_F.a, ab: ARM_F.b, spear: [18, 45, 18, 4], tail: 0, ...o });
   return {
     idle: [base({}), base({ U: 1, sway: 1, tail: 1 })],
-    walk: [base({ la: FL.aUp, sway: 1, ab: [[28, 21], [29, 25], [29.6, 28]] }), base({ U: 1, tail: 1 }),
-           base({ lb: FL.bUp, sway: -1, ab: [[28, 21], [29, 26], [29.4, 30]] }), base({ U: 1, tail: 1 })],
+    walk: [base({ la: FL.aUp, sway: 1, TW: -0.7, SH: 0.4, aa: [[20, 21], [18.6, 25.6], [18.1, 29.8]], ab: [[28, 21], [28.8, 25], [28.9, 27.6]] }),
+           base({ U: 1, tail: 1, HY: -0.4 }),
+           base({ lb: FL.bUp, sway: -1, TW: 0.7, SH: 0.4, aa: [[20, 21], [19.2, 25], [19.1, 27.6]], ab: [[28, 21], [29.4, 25.6], [29.9, 29.8]] }),
+           base({ U: 1, tail: 1, HY: -0.4 })],
     run: [
-      base({ U: 0, la: [22, 31, 21.8, 34.2, 21.4, 38.6], lb: FL.b, sway: 2, tail: 1, ab: [[28, 21], [29.4, 24], [29.4, 26.4]] }),
-      base({ U: 1, la: [22, 31, 21.6, 35.6, 21.2, 41], lb: FL.b, sway: 1, ab: [[28, 21], [29.2, 25], [29.6, 28]] }),
-      base({ U: 1, la: FL.a, lb: FL.b, sway: 0, tail: 1, ab: [[28, 21], [29, 25.6], [29.6, 30]] }),
-      base({ U: 0, la: FL.a, lb: [26, 31, 26.2, 34.2, 26.6, 38.6], sway: -2, tail: 1, ab: [[28, 21], [29, 26], [29.4, 31]] }),
-      base({ U: 1, la: FL.a, lb: [26, 31, 26.4, 35.6, 26.8, 41], sway: -1, ab: [[28, 21], [29.2, 25], [29.6, 28]] }),
-      base({ U: 1, la: FL.a, lb: FL.b, sway: 0, tail: 1, ab: [[28, 21], [29.4, 24.4], [29.4, 26.6]] }),
+      base({ U: 0, la: [22, 31, 21.8, 34.2, 21.4, 38.6], lb: FL.b, sway: 2, tail: 1, TW: -1.2, SH: 0.6, HY: 0.4,
+             aa: [[20, 21], [18.2, 25.4], [17.6, 29.4]], ab: [[28, 21], [28.6, 24], [28.6, 26] ] }),
+      base({ U: 1, la: [22, 31, 21.6, 35.6, 21.2, 41], lb: FL.b, sway: 1, TW: -0.8, SH: 0.3,
+             aa: [[20, 21], [18.6, 25.6], [18.2, 29.6]], ab: [[28, 21], [28.8, 24.6], [29, 27.4]] }),
+      base({ U: 1, la: FL.a, lb: FL.b, sway: 0, tail: 1, HY: -0.6,
+             aa: [[20, 21], [19, 25.5], [18.5, 29]], ab: [[28, 21], [29, 25.6], [29.6, 30]] }),
+      base({ U: 0, la: FL.a, lb: [26, 31, 26.2, 34.2, 26.6, 38.6], sway: -2, tail: 1, TW: 1.2, SH: 0.6, HY: 0.4,
+             aa: [[20, 21], [19.4, 24], [19.4, 26]], ab: [[28, 21], [29.8, 25.4], [30.4, 29.4]] }),
+      base({ U: 1, la: FL.a, lb: [26, 31, 26.4, 35.6, 26.8, 41], sway: -1, TW: 0.8, SH: 0.3,
+             aa: [[20, 21], [19.2, 24.6], [19, 27.4]], ab: [[28, 21], [29.4, 25.6], [29.8, 29.6]] }),
+      base({ U: 1, la: FL.a, lb: FL.b, sway: 0, tail: 1, HY: -0.6,
+             aa: [[20, 21], [19, 25.5], [18.5, 29]], ab: [[28, 21], [29.4, 24.4], [29.4, 26.6]] }),
     ],
     attack: [
       base({ la: FL.aW, lb: FL.bW, aa: [[20, 21], [18.6, 24], [18.4, 23]], ab: [[28, 21], [26, 24.6], [19.6, 26.6]], spear: [19, 13, 19, 38], twoHand: true }),
@@ -356,11 +365,18 @@ function posesFront() {
 function posesBack() {
   const base = (o) => ({ U: 0, DX: 0, sway: 0, la: FL.a, lb: FL.b, aa: ARM_F.a, ab: ARM_F.b, spear: [30, 45, 30, 4], tail: 0, ...o });
   return {
-    idle: [base({}), base({ U: 1, sway: 1, tail: 1 })],
-    walk: [base({ la: FL.aUp, sway: 1 }), base({ U: 1, tail: 1 }), base({ lb: FL.bUp, sway: -1 }), base({ U: 1, tail: 1 })],
+    idle: [base({}), base({ U: 1, sway: 1, tail: 1, SH: 0.35, HY: -0.3 })],
+    walk: [base({ la: FL.aUp, sway: 1, TW: 0.7, SH: 0.4, aa: [[20, 21], [19.2, 25], [19.1, 27.6]] }),
+           base({ U: 1, tail: 1, HY: -0.4 }),
+           base({ lb: FL.bUp, sway: -1, TW: -0.7, SH: 0.4, aa: [[20, 21], [18.6, 25.6], [18.1, 29.8]] }),
+           base({ U: 1, tail: 1, HY: -0.4 })],
     run: [
-      base({ la: [22, 31, 21.8, 34.2, 21.4, 38.6], sway: 2, tail: 1 }), base({ U: 1, la: [22, 31, 21.6, 35.6, 21.2, 41], sway: 1 }), base({ U: 1, sway: 0, tail: 1 }),
-      base({ lb: [26, 31, 26.2, 34.2, 26.6, 38.6], sway: -2, tail: 1 }), base({ U: 1, lb: [26, 31, 26.4, 35.6, 26.8, 41], sway: -1 }), base({ U: 1, sway: 0, tail: 1 }),
+      base({ la: [22, 31, 21.8, 34.2, 21.4, 38.6], sway: 2, tail: 1, TW: 1.2, SH: 0.6, HY: 0.4 }),
+      base({ U: 1, la: [22, 31, 21.6, 35.6, 21.2, 41], sway: 1, TW: 0.8, SH: 0.3 }),
+      base({ U: 1, sway: 0, tail: 1, HY: -0.6 }),
+      base({ lb: [26, 31, 26.2, 34.2, 26.6, 38.6], sway: -2, tail: 1, TW: -1.2, SH: 0.6, HY: 0.4 }),
+      base({ U: 1, lb: [26, 31, 26.4, 35.6, 26.8, 41], sway: -1, TW: -0.8, SH: 0.3 }),
+      base({ U: 1, sway: 0, tail: 1, HY: -0.6 }),
     ],
     attack: [
       base({ U: 1, la: FL.aW, lb: FL.bW, raised: true, aa: [[20, 21], [23, 25], [29, 25]], ab: [[28, 21], [29.6, 26], [29.6, 29]], spear: [29, 38, 29, 8] }),
@@ -376,17 +392,19 @@ function posesSide() {
   const base = (o) => ({ U: 0, DX: 0, sway: 0, la: S(22.6, 21.6), lb: S(25.4, 26), aa: [[23, 21.5], [22.4, 26], [23, 29]],
                          ab: [[24, 21.5], [24.6, 25.6], [27, 28.6]], spear: [27, 45, 27, 4], ...o });
   return {
-    idle: [base({}), base({ U: 1, sway: -1 })],
-    walk: [base({ U: 1, la: S(22, 20.4), lb: S(26.6, 28), sway: -1, flow: 0, aa: [[23, 21.5], [22.6, 26], [24, 29]] }),
-           base({ la: S(25, 24.6, 1), lb: S(24.6, 24.4), sway: -2, flow: 1 }),
-           base({ U: 1, la: S(26.6, 28), lb: S(22, 20.4), sway: -1, flow: 0, aa: [[23, 21.5], [22, 26], [21.6, 29]] }),
-           base({ la: S(24.6, 24.4), lb: S(25, 24.6, 1), sway: -2, flow: 1 })],
+    idle: [base({}), base({ U: 1, sway: -1, SH: 0.35, HY: -0.3 })],
+    walk: [base({ U: 1, la: S(22, 20.4), lb: S(26.6, 28), sway: -1, flow: 0, SH: 0.4, HY: 0.3,
+                  aa: [[23, 21.5], [22.6, 26], [24, 29]], ab: [[24, 21.5], [24, 25.4], [25.4, 28] ] }),
+           base({ la: S(25, 24.6, 1), lb: S(24.6, 24.4), sway: -2, flow: 1, HY: -0.4 }),
+           base({ U: 1, la: S(26.6, 28), lb: S(22, 20.4), sway: -1, flow: 0, SH: 0.4, HY: 0.3,
+                  aa: [[23, 21.5], [22, 26], [21.6, 29]], ab: [[24, 21.5], [25.2, 25.8], [28, 29] ] }),
+           base({ la: S(24.6, 24.4), lb: S(25, 24.6, 1), sway: -2, flow: 1, HY: -0.4 })],
     run: [
-      base({ DX: 1, U: 1, la: S(20.6, 18.4), lb: S(27.6, 30), sway: -3, flow: 2, aa: [[23, 21.5], [24.6, 25], [26, 27.4]] }),
-      base({ DX: 1, U: 0, la: [24, 31, 21.6, 34.6, 19.6, 38.6], lb: S(26, 26.8), sway: -3, flow: 1, aa: [[23, 21.5], [23.6, 25.6], [24.6, 28.4]] }),
+      base({ DX: 2, U: 1, la: S(20.6, 18.4), lb: S(27.6, 30), sway: -3, flow: 2, SH: 0.5, HY: 0.4, aa: [[23, 21.5], [24.6, 25], [26, 27.4]] }),
+      base({ DX: 2, U: 0, la: [24, 31, 21.6, 34.6, 19.6, 38.6], lb: S(26, 26.8), sway: -3, flow: 1, HY: -0.5, aa: [[23, 21.5], [23.6, 25.6], [24.6, 28.4]] }),
       base({ DX: 1, U: 0, la: [24, 31, 26.2, 35, 25, 39.6], lb: S(24.4, 23.8), sway: -2, flow: 2, aa: [[23, 21.5], [22.6, 26], [22.4, 29]] }),
-      base({ DX: 1, U: 1, la: S(27.6, 30), lb: S(20.6, 18.4), sway: -3, flow: 1, aa: [[23, 21.5], [21.6, 25.6], [20.4, 27.6]] }),
-      base({ DX: 1, U: 0, la: S(26, 26.8), lb: [24, 31, 21.6, 34.6, 19.6, 38.6], sway: -3, flow: 2, aa: [[23, 21.5], [22.6, 26], [22.4, 29]] }),
+      base({ DX: 2, U: 1, la: S(27.6, 30), lb: S(20.6, 18.4), sway: -3, flow: 1, SH: 0.5, HY: 0.4, aa: [[23, 21.5], [21.6, 25.6], [20.4, 27.6]] }),
+      base({ DX: 2, U: 0, la: S(26, 26.8), lb: [24, 31, 21.6, 34.6, 19.6, 38.6], sway: -3, flow: 2, HY: -0.5, aa: [[23, 21.5], [22.6, 26], [22.4, 29]] }),
       base({ DX: 1, U: 0, la: S(24.4, 23.8), lb: [24, 31, 26.2, 35, 25, 39.6], sway: -2, flow: 1, aa: [[23, 21.5], [23.6, 25.6], [24.6, 28.4]] }),
     ],
     attack: [

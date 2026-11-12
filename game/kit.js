@@ -146,12 +146,13 @@ async function optionsScreen() {
   const rows = () => [
     ["TEXT SPEED", ["SLOW", "NORMAL", "FAST"][Game.opts.text]],
     ["AUTO-RUN", Game.opts.autorun ? "ON  (hold B to walk)" : "OFF (hold B to run)"],
+    ["PARTY FOLLOWER", Game.opts.follower === false ? "OFF" : "ON"],
     ["SOUND", Game.muted ? "OFF" : "ON"],
     ["FULLSCREEN", "PRESS A  (or F)"],
     ["BACK", ""],
   ];
   const draw = (c) => {
-    frameBox(c, 10, 20, 220, 94);
+    frameBox(c, 10, 20, 220, 108);
     rows().forEach(([label, val], i) => {
       const y = 28 + i * 16;
       drawText(c, label, 26, y, i === rows().length - 1 ? "#e05050" : INK);
@@ -161,14 +162,15 @@ async function optionsScreen() {
     drawText(c, "These stay with you, not with the save.", 10, 126, "#8a8090", null);
   };
   await panelScreen("OPTIONS", draw, async k => {
-    cur = listMove(cur, k, 5);
+    cur = listMove(cur, k, 6);
     const left = k.has("left"), right = k.has("right"), a = k.has("a");
     if (!left && !right && !a) return;
     if (cur === 0) { Game.opts.text = (Game.opts.text + (left ? 2 : 1)) % 3; Sound.fx("blip"); Game.saveOpts(); }
     else if (cur === 1) { Game.opts.autorun = !Game.opts.autorun; Sound.fx("blip"); Game.saveOpts(); }
-    else if (cur === 2) { Game.toggleSound(); Sound.fx("blip"); }
-    else if (cur === 3 && a) { toggleFullscreen(); }
-    else if (cur === 4 && a) return "close";
+    else if (cur === 2) { Game.opts.follower = Game.opts.follower === false; Sound.fx("blip"); Game.saveOpts(); }
+    else if (cur === 3) { Game.toggleSound(); Sound.fx("blip"); }
+    else if (cur === 4 && a) { toggleFullscreen(); }
+    else if (cur === 5 && a) return "close";
   });
 }
 

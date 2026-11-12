@@ -11,7 +11,7 @@ const Game = {
   flash(name) { this.banner = { name, t: 150 }; },
   toggleSound() { this.muted = !this.muted; if (this.muted) { Sound.stop(); Sound.hush(); } else { Sound.init(); Sound.play(World.map ? World.map.music : "title"); } },
   slot: 0, playtime: 0, savedAt: 0,
-  opts: (() => { const d = { text: 1, autorun: false };
+  opts: (() => { const d = { text: 1, autorun: false, follower: true };
     try { return { ...d, ...JSON.parse(localStorage.getItem("ellyendor-opts") || "{}") }; } catch (e) { return d; } })(),
   saveOpts() { try { localStorage.setItem("ellyendor-opts", JSON.stringify(this.opts)); } catch (e) {} },
   slotKey: i => "ellyendor-slot-" + i,
