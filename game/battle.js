@@ -257,11 +257,19 @@ const Battle = {
   },
 
   async giveExp(foe) {
-    const base = SPECIES[foe.id].exp * foe.level / 5 * (this.trainer ? 1.5 : 1);
-    for (const i of this.part) {
-      const m = Game.party[i]; if (!m || m.hp <= 0) continue;
-      const gain = Math.floor(base / this.part.size);
-      await say(`${monName(m)} gained ${gain} EXP.`);
+    // Every link you hold learns what any one of them learns: the whole squad takes the full
+    // amount, and the mon that did the fighting is not docked a single point for carrying them.
+    const gain = Math.floor(SPECIES[foe.id].exp * foe.level / 5 * (this.trainer ? 1.5 : 1));
+    const alive = Game.party.filter(m => m && m.hp > 0);
+    const fought = alive.filter(m => this.part.has(Game.party.indexOf(m)));
+    const rest = alive.filter(m => !fought.includes(m));
+    for (const m of fought) await say(`${monName(m)} gained ${gain} EXP.`);
+    if (rest.length) {
+      const names = rest.map(monName);
+      const list = names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+      await say(`Through the soul link, ${list} gained ${gain} EXP.`);
+    }
+    for (const m of alive) {
       m.exp += gain;
       while (m.exp >= expNext(m.level) && m.level < MAX_LEVEL) {
         m.exp -= expNext(m.level);
