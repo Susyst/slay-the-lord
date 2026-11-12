@@ -133,7 +133,7 @@ const World = {
       if (!Game.held.has(d)) continue;
       const turned = p.dir !== d; p.dir = d;
       const [dx, dy] = DIRS[d];
-      if (!this.blocked(p.x + dx, p.y + dy)) { p.moving = true; p.t = 0; p.speed = Game.riding ? TS / 6 : Game.held.has("b") ? 2 : 1; }
+      if (!this.blocked(p.x + dx, p.y + dy)) { p.moving = true; p.t = 0; p.speed = Game.riding ? TS / 6 : (Game.held.has("b") !== !!Game.opts.autorun) ? 2 : 1; }
       else if (!turned && Game.ticks % 20 === 0) Sound.fx("bump");
       break;
     }
@@ -455,7 +455,10 @@ const World = {
     }
     Game.drawOverride = null; Game.autosave();
   },
-  menuOpts() { return Game.flags.board && !this.map.interior ? ["SQUAD", "BAG", Game.riding ? "DISMOUNT" : "BOARD", "SAVE", "SOUND", "SCREEN", "EXIT"] : ["SQUAD", "BAG", "SAVE", "SOUND", "SCREEN", "EXIT"]; },
+  menuOpts() {
+    const ride = Game.flags.board && !this.map.interior ? [Game.riding ? "DISMOUNT" : "BOARD"] : [];
+    return ["SQUAD", "BAG", "KIT", "ORDERS", ...ride, "SAVE", "OPTIONS", "EXIT"];
+  },
 
   // ---------------------------------------------------------------- drawing
   camera() {

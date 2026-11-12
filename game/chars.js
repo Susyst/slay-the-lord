@@ -32,11 +32,20 @@ const CHAR_OPTS = {
            ["#c8a460", "#9a7a40", "#6c542a", "#44341a"], ["#b0b0b8", "#84848e", "#5c5c66", "#3a3a42"],
            ["#9a4a30", "#743422", "#502418", "#32160e"]],
 };
+CHAR_OPTS.head = ["hood", "bare", "helm"];
 const CHAR_NAMES = { skin: ["Pale", "Tan", "Bronze", "Deep"], cloak: ["Charcoal", "Midnight", "Moss", "Oxblood", "Ash"],
                      accent: ["Crimson", "Ochre", "Teal", "Bone", "Violet"], armor: ["Gunmetal", "Bronze", "Black Iron"],
-                     eyes: ["Ember", "Frost", "Blood", "Spirit"] };
-const CHAR_KEYS = ["skin", "cloak", "accent", "armor", "eyes"];
-function charSwatch(key, i) { const v = CHAR_OPTS[key][i]; return typeof v === "string" ? v : v[1]; }
+                     eyes: ["Ember", "Frost", "Blood", "Spirit"], hair: ["Chestnut", "Soot", "Wheat", "Ash Grey", "Rust"],
+                     head: ["Hood Up", "Bare Head", "Steel Helm"] };
+const CHAR_KEYS = ["skin", "hair", "head", "cloak", "accent", "armor", "eyes"];
+// head is picked by name rather than by index, so cycling a field has to handle both kinds
+function lookIndex(key, look) { const v = look[key]; return typeof v === "string" ? Math.max(0, CHAR_OPTS[key].indexOf(v)) : (v || 0); }
+function cycleLook(look, key, dir) {
+  const n = CHAR_OPTS[key].length, i = (lookIndex(key, look) + dir + n) % n;
+  look[key] = typeof CHAR_OPTS[key][i] === "string" && key === "head" ? CHAR_OPTS[key][i] : i;
+}
+function lookName(key, look) { return CHAR_NAMES[key][lookIndex(key, look)]; }
+function charSwatch(key, i) { if (key === "head") return ["#6a6070", "#e8c4a4", "#ccd4e0"][i] || "#6a6070"; const v = CHAR_OPTS[key][i]; return typeof v === "string" ? v : v[1]; }
 
 // ---------------------------------------------------------------- rig
 const HEXC = {};
@@ -436,9 +445,9 @@ const NPC_LOOKS = {
   officer: { head: "helm", armor: 1, cloak: 3, accent: 0, eyesHex: "#ff3a3a", crest: CHAR_OPTS.accent[1] },
   general: { head: "bare", skin: 0, hair: 3, cloakRamp: CHAR_OPTS.accent[0], armor: 1, noAccent: true, pants: RAMP.gloves },
 };
-const DEFAULT_LOOK = { skin: 0, cloak: 0, accent: 0, armor: 0, eyes: 0 };
+const DEFAULT_LOOK = { skin: 0, hair: 0, head: "hood", cloak: 0, accent: 0, armor: 0, eyes: 0 };
 const CHAR = {};
 function buildAllChars(playerLook) {
   for (const [k, v] of Object.entries(NPC_LOOKS)) CHAR[k] = buildChar(v);
-  CHAR.player = buildChar({ ...DEFAULT_LOOK, ...playerLook, head: "hood" });
+  CHAR.player = buildChar({ ...DEFAULT_LOOK, ...playerLook });
 }

@@ -11,6 +11,9 @@ const Game = {
   flash(name) { this.banner = { name, t: 150 }; },
   toggleSound() { this.muted = !this.muted; if (this.muted) { Sound.stop(); Sound.hush(); } else { Sound.init(); Sound.play(World.map ? World.map.music : "title"); } },
   slot: 0, playtime: 0, savedAt: 0,
+  opts: (() => { const d = { text: 1, autorun: false };
+    try { return { ...d, ...JSON.parse(localStorage.getItem("ellyendor-opts") || "{}") }; } catch (e) { return d; } })(),
+  saveOpts() { try { localStorage.setItem("ellyendor-opts", JSON.stringify(this.opts)); } catch (e) {} },
   slotKey: i => "ellyendor-slot-" + i,
   // Writes the current run into the active slot. Autosaves call this silently; the menu calls it with feedback.
   save(auto) {
@@ -108,7 +111,7 @@ async function say(text) {
     const total = TB.pages[TB.page].join("").length;
     await nextFrame();
     while (true) {
-      if (TB.chars < total) { TB.chars = Math.min(total, TB.chars + (Game.held.has("a") || Game.held.has("b") ? 3 : 1.4)); if (Game.ticks % 3 === 0 && !Sound.speaking) Sound.fx("blip"); }
+      if (TB.chars < total) { TB.chars = Math.min(total, TB.chars + (Game.held.has("a") || Game.held.has("b") ? 3.4 : [0.9, 1.4, 2.6][Game.opts.text])); if (Game.ticks % 3 === 0 && !Sound.speaking) Sound.fx("blip"); }
       if ((Game.keys.has("a") || Game.keys.has("b")) && TB.chars >= total) break;
       await nextFrame();
     }
@@ -254,7 +257,7 @@ function migrateParty(party) {
 // Save-slot picker. mode "load" picks a filled slot, "new" picks any slot (asks before overwriting).
 const fmtTime = s => { const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h + ":" + String(m).padStart(2, "0"); };
 async function slotScreen(slots, mode) {
-  const minis = slots.map(sv => sv && sv.player ? buildChar({ ...DEFAULT_LOOK, ...sv.player.look, head: "hood" }).down.idle[0] : null);
+  const minis = slots.map(sv => sv && sv.player ? buildChar({ ...DEFAULT_LOOK, ...sv.player.look }).down.idle[0] : null);
   const icons = slots.map(sv => sv ? migrateParty(sv.party).slice(0, 4).map(m => MON_ART[m.id]).filter(Boolean) : []);
   let cur = mode === "load" ? Math.max(0, slots.findIndex(Boolean)) : Math.max(0, slots.findIndex(x => !x)), confirm = false;
   const draw = (c, t) => {
@@ -352,7 +355,7 @@ async function introScene() {
 }
 
 // ---------------------------------------------------------------- character creation
-function drawDossierBg(c, t) {
+function drawDossierBg(c, t, title = "ENLISTMENT RECORD") {
   for (let y = 0; y < H; y++) R(c, lerpCol("#141826", "#2a2030", y / H), 0, y, W, 1);
   // lamp-lit floor and a pool of light under the recruit
   R(c, "#1c1a24", 0, 128, W, 32);
@@ -361,7 +364,7 @@ function drawDossierBg(c, t) {
   const f = 0.92 + Math.sin(t / 180) * 0.04;
   g.addColorStop(0, `rgba(255,200,120,${0.38 * f})`); g.addColorStop(1, "rgba(255,200,120,0)");
   c.fillStyle = g; c.fillRect(0, 30, 140, 130);
-  bigText(c, "ENLISTMENT RECORD", 120, 4, 1, "#f0d080", "#401010");
+  if (title) bigText(c, title, 120, 4, 1, "#f0d080", "#401010");
 }
 async function nameEntry(start) {
   const rows = ["ABCDEFGHI", "JKLMNOPQR", "STUVWXYZ-"], extras = ["DEL", "OK"];
@@ -395,11 +398,11 @@ async function nameEntry(start) {
   }
   return name;
 }
-async function customizeScene() {
+async function customizeScene(intro = "VOSS: Before you ship out, the clerk needs your record. Make it count. Hamon's people will learn that face.") {
   Game.scene = "custom"; Sound.play("camp");
   const look = { ...DEFAULT_LOOK, ...Game.player.look }; let name = Game.player.name;
   const keys = CHAR_KEYS, opts = ["NAME", ...keys.map(k => k.toUpperCase()), "CONFIRM"], last = opts.length - 1;
-  let cur = 0, spr = buildChar({ ...look, head: "hood" }), spin = 0;
+  let cur = 0, spr = buildChar(look), spin = 0;
   const DIRS4 = ["down", "right", "up", "left"];
   const draw = (c, t) => {
     drawDossierBg(c, t);
@@ -412,11 +415,11 @@ async function customizeScene() {
     drawText(c, "< TURN >", 40, 148, "#8a8090", null);
     frameBox(c, 112, 18, 124, 128);
     opts.forEach((o, i) => {
-      const y = 26 + i * 16;
+      const y = 24 + i * 14;
       drawText(c, o, 126, y, i === last ? "#e05050" : INK);
       if (i > 0 && i < last) {
-        const key = keys[i - 1], val = CHAR_NAMES[key][look[key]];
-        R(c, "#0d0a10", 164, y + 1, 7, 7); R(c, charSwatch(key, look[key]), 165, y + 2, 5, 5);
+        const key = keys[i - 1], val = lookName(key, look);
+        R(c, "#0d0a10", 164, y + 1, 7, 7); R(c, charSwatch(key, lookIndex(key, look)), 165, y + 2, 5, 5);
         drawText(c, val, 228 - textWidth(val), y, "#a8b8e0");
       } else if (i === 0) drawText(c, name, 228 - textWidth(name), y, "#e8c870");
       if (i === cur) cursor(c, 117, y, "#e8c870");
@@ -424,7 +427,7 @@ async function customizeScene() {
   };
   Game.drawOverride = (c, t) => { draw(c, t); drawWorldTextBox(c, t); }; Game.fade = 0;
   for (let i = 30; i >= 0; i--) { Game.fade = i / 30; spin++; await nextFrame(); }
-  await say("VOSS: Before you ship out, the clerk needs your record. Make it count. Hamon's people will learn that face.");
+  if (intro) { await say(intro); }
   TB.close();
   while (true) {
     spin++;
@@ -432,9 +435,9 @@ async function customizeScene() {
     if (k.has("up")) { cur = (cur + last) % (last + 1); Sound.fx("blip"); }
     if (k.has("down")) { cur = (cur + 1) % (last + 1); Sound.fx("blip"); }
     if (cur > 0 && cur < last && (k.has("left") || k.has("right"))) {
-      const key = keys[cur - 1], n = CHAR_OPTS[key].length;
-      look[key] = (look[key] + (k.has("right") ? 1 : n - 1)) % n;
-      spr = buildChar({ ...look, head: "hood" }); Sound.fx("select");
+      const key = keys[cur - 1];
+      cycleLook(look, key, k.has("right") ? 1 : -1);
+      spr = buildChar(look); Sound.fx("select");
     } else if (cur === 0 && (k.has("left") || k.has("right"))) spin = (Math.floor(spin / 360) + 1) * 360;
     if (k.has("a") || (k.has("start") && cur === last)) {
       if (cur === 0) { Sound.fx("select"); name = await nameEntry(name); Game.drawOverride = (c, t) => { draw(c, t); drawWorldTextBox(c, t); }; }
