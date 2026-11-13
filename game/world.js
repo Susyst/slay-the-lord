@@ -552,8 +552,7 @@ const World = {
     for (const pr of this.map.props) if (pr.kind === "fire") drawCampfire(ctx, pr.x * TS - cx, pr.y * TS - cy, t);
       else if (pr.kind === "hearth") drawCampfire(ctx, pr.x * TS - cx + 4, pr.y * TS - cy + 2, t);
     this.drawFx(ctx, cx, cy, false);
-    const pet = typeof Follow === "object" ? Follow.actor() : null;
-    const actors = (pet ? [pet] : []).concat(this.map.npcs.filter(n => !n.gone).map(n => [n, n.look])).concat([[this.player, "player"]]);
+    const actors = this.map.npcs.filter(n => !n.gone).map(n => [n, n.look]).concat([[this.player, "player"]]);
     actors.sort((a, b) => this.py(a[0]) - this.py(b[0]));
     // characters go on their own layer so they can take the night tint and warm lamp light
     const A = ACTOR_LAYER.getContext("2d"); A.clearRect(0, 0, W, H);
