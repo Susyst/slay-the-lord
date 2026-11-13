@@ -46,7 +46,13 @@ const Game = {
 // The canvas fills the whole window, edge to edge, with no bars: on a 16:9 screen the picture is stretched a little wider than the
 // game's 3:2 frame, which is what a GBA upscaler does too. Pixels stay crisp through image-rendering: pixelated.
 function fit() {
-  cv.style.width = window.innerWidth + "px"; cv.style.height = window.innerHeight + "px";
+  // Fill the window edge to edge, but only stretch the picture so far: past a fifth out of shape
+  // (a phone held upright, say) bars are kinder than a squashed world. 16:9 and 16:10 still fill.
+  const w = window.innerWidth, h = window.innerHeight, want = W / H, MAX = 1.2, have = w / h;
+  let cw = w, ch = h;
+  if (have > want * MAX) cw = Math.round(h * want * MAX);
+  else if (have < want / MAX) ch = Math.round(w * MAX / want);
+  cv.style.width = cw + "px"; cv.style.height = ch + "px";
 }
 addEventListener("resize", fit); fit();
 // F11 / F toggles fullscreen: through the app window when running as a desktop app, otherwise through the browser
