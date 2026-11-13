@@ -88,11 +88,11 @@ jobs:
         working-directory: app
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-        run: npx tauri android build --apk --debug
+        run: npx tauri android build --apk --debug --target aarch64   # arm64 covers every phone of the last decade; four ABIs quadrupled the download
       - name: Find it
         id: apk
         run: |
-          path=$(find app/src-tauri/gen/android -name '*.apk' | head -1)
+          path=$(find app/src-tauri/gen/android -name '*.apk' -printf '%s %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
           echo "path=$path" >> "$GITHUB_OUTPUT"
           echo "Built $path"
       - uses: actions/upload-artifact@v4

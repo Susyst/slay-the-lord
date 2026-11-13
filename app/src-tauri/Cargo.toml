@@ -23,3 +23,12 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.12.5", features = [] }
 tauri-plugin-log = "2"
+
+# The APK is debug-signed so it can be sideloaded without a keystore, which means it is built
+# on the dev profile. Unoptimised, unstripped dev binaries turned a 1.2 MB game into a 449 MB
+# APK, so the dev profile is optimised and stripped here. The desktop builds use --release and
+# are unaffected.
+[profile.dev]
+opt-level = 2
+debug = false
+strip = "symbols"
