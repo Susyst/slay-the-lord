@@ -4,7 +4,7 @@
 // and wrapped in a 1px dark outline.
 const CW = 48, LIFT = -2;
 // Vertical squash: body compresses toward the feet, head a little less, so everyone stands ~24px tall.
-const FEET_Y = 43, NECK_Y = 17, KB = 0.66, KH = 0.80, NECK_S = FEET_Y - (FEET_Y - NECK_Y) * KB;
+const FEET_Y = 43, NECK_Y = 17, KB = 0.50, KH = 0.98, HEAD_W = 1.28, NECK_S = FEET_Y - (FEET_Y - NECK_Y) * KB;
 const SY = y => y >= NECK_Y ? FEET_Y - (FEET_Y - y) * KB : NECK_S - (NECK_Y - y) * KH;                 // canvas size; feet sit on y=43, body centred on x=24
 const OUTLINE = "#0d0a10";
 
@@ -52,15 +52,16 @@ const HEXC = {};
 const rgb = h => HEXC[h] || (HEXC[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
 const RIG_BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
 class Rig {
-  constructor(size = CW, squash = true) { this.S = size; this.sq = squash; this.pid = new Int16Array(size * size).fill(-1); this.flat = []; this.parts = []; this.post = []; this.glows = []; this.ox = 0; this.oy = 0; }
+  constructor(size = CW, squash = true) { this.S = size; this.sq = squash; this.pid = new Int16Array(size * size).fill(-1); this.flat = []; this.parts = []; this.post = []; this.glows = []; this.ox = 0; this.oy = 0; this.hw = 1; }
   Y(v) { return this.sq ? SY(v) : v; }
   part(ramp, group) { this.parts.push({ ramp, group }); return this.parts.length - 1; }
   set(p, x, y, col) {
     x = Math.floor(x); y = Math.floor(y); if (x < 0 || y < 0 || x >= this.S || y >= this.S) return;
     const i = y * this.S + x; this.pid[i] = p; this.flat[i] = col;
   }
+  X(x) { return this.hw === 1 ? x + this.ox : 24 + (x - 24) * this.hw + this.ox; }
   poly(ramp, pts, group) {
-    const p = this.part(ramp, group), P = pts.map(([x, y]) => [x + this.ox, this.Y(y + this.oy)]);
+    const p = this.part(ramp, group), P = pts.map(([x, y]) => [this.X(x), this.Y(y + this.oy)]);
     const xs = P.map(q => q[0]), ys = P.map(q => q[1]);
     for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++)
       for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
@@ -74,7 +75,7 @@ class Rig {
     return p;
   }
   cap(ramp, ax, ay, bx, by, r, group) {
-    const p = this.part(ramp, group); ax += this.ox; bx += this.ox; ay = this.Y(ay + this.oy); by = this.Y(by + this.oy);
+    const p = this.part(ramp, group); ax = this.X(ax); bx = this.X(bx); ay = this.Y(ay + this.oy); by = this.Y(by + this.oy);
     const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
     for (let y = Math.floor(Math.min(ay, by) - r); y <= Math.ceil(Math.max(ay, by) + r); y++)
       for (let x = Math.floor(Math.min(ax, bx) - r); x <= Math.ceil(Math.max(ax, bx) + r); x++) {
@@ -85,8 +86,8 @@ class Rig {
     return p;
   }
   rect(ramp, x0, y0, x1, y1, group) { return this.poly(ramp, [[x0, y0], [x1 + 1, y0], [x1 + 1, y1 + 1], [x0, y1 + 1]], group); }
-  pixels(list) { const p = this.part(null); for (const [x, y, c] of list) this.set(p, x + this.ox, this.Y(y + this.oy + 0.5), c); return p; }
-  dot(x, y, c, glow) { const q = [Math.floor(x + this.ox), Math.floor(this.Y(y + this.oy + 0.5)), c]; this.post.push(q); if (glow) this.glows.push(q); }
+  pixels(list) { const p = this.part(null); for (const [x, y, c] of list) this.set(p, Math.floor(this.X(x)), this.Y(y + this.oy + 0.5), c); return p; }
+  dot(x, y, c, glow) { const q = [Math.floor(this.X(x)), Math.floor(this.Y(y + this.oy + 0.5)), c]; this.post.push(q); if (glow) this.glows.push(q); }
   render(flash) {
     const c = document.createElement("canvas"); c.width = c.height = this.S; const CW = this.S;
     const x2 = c.getContext("2d"), img = x2.createImageData(CW, CW), d = img.data, { pid, parts } = this;
@@ -235,6 +236,7 @@ function torsoFront(g, L) {
   g.poly(RAMP.leather, [[24.6, 30.6], [28.2, 30.6], [27.6, 33.2], [24.6, 33.8]]);
 }
 function figFront(g, L, P) {
+  g.hw = 1;
   const U = P.U, D = P.DX;
   g.ox = D; g.oy = U + LIFT;
   const sw = P.sway;
@@ -250,7 +252,7 @@ function figFront(g, L, P) {
   if (L.pauldron) pauldron(g, L, 1);
   if (L.drape && L.cloak) g.poly(L.cloak, [[17.4, 20], [19, 18.8], [23, 19], [23.2, 22], [21.6, 25.4], [20.4, 28.2], [19.2, 26.6], [17.8, 28.6], [16.4, 25], [16.4, 22]]);
   g.ox = D + (P.TW || 0) * 0.35 + (P.HX || 0); g.oy = U + LIFT + (P.HY || 0);
-  headFront(g, L, P);
+  g.hw = HEAD_W; headFront(g, L, P); g.hw = 1;
   if (L.accent) {
     g.poly(L.accent, L.head === "hood" ? [[20.4, 16.6], [27.6, 16.6], [28.1, 18.6], [27.6, 20.6], [20.4, 20.6], [19.9, 18.6]]
                                        : [[20.6, 18.4], [27.4, 18.4], [27.6, 20.6], [20.4, 20.6]]);
@@ -262,6 +264,7 @@ function figFront(g, L, P) {
   if (P.swoosh) swoosh(g, P.swoosh);
 }
 function figBack(g, L, P) {
+  g.hw = 1;
   const U = P.U, D = P.DX, sw = P.sway;
   g.ox = 0; g.oy = 0;
   legs(g, L, P.la, P.lb, false);
@@ -285,11 +288,12 @@ function figBack(g, L, P) {
     g.poly(L.accent, [[23, 19.5], [25.2, 19.5], [25.6 + t, 26], [24.6 + t, 29.4], [23.6 + t, 27.4], [22.8, 25]]);
   }
   g.ox = D + (P.HX || 0); g.oy = U + LIFT + (P.HY || 0);
-  headBack(g, L);
+  g.hw = HEAD_W; headBack(g, L); g.hw = 1;
   g.ox = 0; g.oy = 0;
   if (P.swoosh) swoosh(g, P.swoosh);
 }
 function figSide(g, L, P) {
+  g.hw = 1;
   const U = P.U, D = P.DX, sw = P.sway;
   g.ox = D; g.oy = U + LIFT;
   // far arm and far pauldron first
@@ -318,7 +322,7 @@ function figSide(g, L, P) {
   } else nearArm();
   if (L.drape && L.cloak) g.poly(L.cloak, [[21.2, 19], [25.6, 18.8], [26.8, 22], [26.2, 25.6], [24.4, 27.6], [23.2, 26], [21.8, 27.4], [20.8, 23]]);
   g.ox = D + (P.HX || 0); g.oy = U + LIFT + (P.HY || 0);
-  headSide(g, L, P);
+  g.hw = HEAD_W; headSide(g, L, P); g.hw = 1;
   if (L.accent) g.poly(L.accent, L.head === "hood" ? [[23.4, 16.6], [28.8, 16.6], [28.8, 18.6], [27.8, 20.6], [21.8, 20.6], [21.6, 18.2]]
                                                    : [[21.8, 18.4], [27, 18.4], [27, 20.6], [21.8, 20.6]]);
   g.ox = 0; g.oy = 0;
