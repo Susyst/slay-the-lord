@@ -178,9 +178,77 @@ async function optionsScreen() {
 const _menuPick = World.updateMenu;
 World.updateMenu = function () {
   const before = this.menu, opts = this.menuOpts(), pick = opts[this.mcur], a = Game.keys.has("a");
-  if (before === "main" && a && (pick === "KIT" || pick === "ORDERS" || pick === "OPTIONS")) {
+  if (before === "main" && a && (pick === "KIT" || pick === "MAP" || pick === "ORDERS" || pick === "OPTIONS")) {
     Sound.fx("select"); this.menu = null;
-    return this.run(async () => { await (pick === "KIT" ? kitScreen() : pick === "ORDERS" ? ordersScreen() : optionsScreen()); });
+    return this.run(async () => {
+      await (pick === "KIT" ? kitScreen() : pick === "MAP" ? mapScreen() : pick === "ORDERS" ? ordersScreen() : optionsScreen());
+    });
   }
   return _menuPick.call(this);
 };
+
+// ---------------------------------------------------------------- the theatre map
+// Laid out the way the campaign runs: the road west along the middle, the side regions above and below it.
+const REGION_MAP = [
+  { id: "citadel", x: 10,  y: 74, w: 40, label: "CITADEL", desc: "Hamon's Citadel. The Great Lord, and the end of the road." },
+  { id: "shrines", x: 56,  y: 74, w: 44, label: "SHRINES", desc: "The High Shrines. General Thal keeps the summit gate." },
+  { id: "hollow",  x: 106, y: 74, w: 44, label: "HOLLOW",  desc: "The Hollow Wood. General Mirene's ground." },
+  { id: "front",   x: 156, y: 74, w: 38, label: "FRONT",   desc: "The Western Front. Outpost 7, and Varrow's fortress." },
+  { id: "camp",    x: 200, y: 74, w: 32, label: "CAMP",    desc: "Allied Base Camp. Where you enlisted." },
+  { id: "ridge",   x: 58,  y: 38, w: 40, label: "RIDGE",   desc: "The Windward Ridge. The Voice, chained at the wind shrine." },
+  { id: "cinder",  x: 156, y: 38, w: 38, label: "PITS",    desc: "The Cinder Pits. A Dominion quarry, still working." },
+  { id: "marsh",   x: 106, y: 104, w: 42, label: "MARSH",  desc: "The Drowned Marsh. The Saint, past the last bridge." },
+];
+const MAP_LINKS = [[50, 82, 56, 82], [100, 82, 106, 82], [150, 82, 156, 82], [194, 82, 200, 82],
+                   [78, 54, 78, 74], [175, 54, 175, 74], [127, 90, 127, 104]];
+const MAP_HOME = { hq: "camp", barracks: "camp", infirmary: "camp" };
+const seenMap = id => !!(Game.flags.seen && Game.flags.seen[MAP_HOME[id] || id]);
+
+const _mapLoad = World.load;
+World.load = function (id, x, y, dir) {
+  _mapLoad.call(this, id, x, y, dir);
+  if (!Game.flags.seen) Game.flags.seen = {};
+  Game.flags.seen[MAP_HOME[id] || id] = true;
+};
+
+async function mapScreen() {
+  const here = MAP_HOME[Game.mapId] || Game.mapId;
+  let cur = Math.max(0, REGION_MAP.findIndex(r => r.id === here));
+  const draw = (c, t) => {
+    drawText(c, "WESTERN THEATRE OF ELLYENDOR", 10, 20, "#8ee6ff", null);
+    const n = REGION_MAP.filter(q => seenMap(q.id)).length, tally = `${n}/${REGION_MAP.length}`;
+    drawText(c, tally, 230 - textWidth(tally), 20, "#a8b8e0", null);
+    for (const [x1, y1, x2, y2] of MAP_LINKS) R(c, "#6a6070", x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1));
+    REGION_MAP.forEach((r, i) => {
+      const open = seenMap(r.id), at = r.id === here, sel = i === cur;
+      R(c, "#0d0a10", r.x, r.y, r.w, 16);
+      R(c, open ? (at ? "#2a4a3a" : "#1c1a26") : "#141218", r.x + 1, r.y + 1, r.w - 2, 14);
+      if (sel) { const f = Math.floor(t / 180) % 2; R(c, f ? "#e8c870" : "#8a7a40", r.x, r.y, r.w, 1); R(c, f ? "#e8c870" : "#8a7a40", r.x, r.y + 15, r.w, 1); }
+      const lab = open ? r.label : "?????";
+      drawText(c, lab, r.x + (r.w >> 1) - (textWidth(lab) >> 1), r.y + 5, open ? (at ? "#7ad66a" : INK) : "#6a6070", null);
+      if (at) { const f = Math.floor(t / 300) % 2; if (f) R(c, "#7ad66a", r.x + (r.w >> 1) - 1, r.y - 5, 3, 3); }
+    });
+    frameBox(c, 4, 124, 232, 32);
+    const r = REGION_MAP[cur], open = seenMap(r.id);
+    wrapText(open ? r.desc : "You have not been here yet.", 214).slice(0, 2)
+      .forEach((l, i) => drawText(c, l, 12, 132 + i * 12, open ? INK : "#8a8090"));
+  };
+  await panelScreen("THEATRE MAP", draw, async k => {
+    // step to whichever region actually lies that way on the board
+    let dx = 0, dy = 0;
+    if (k.has("left")) dx = -1; else if (k.has("right")) dx = 1;
+    else if (k.has("up")) dy = -1; else if (k.has("down")) dy = 1;
+    if (!dx && !dy) return;
+    const a = REGION_MAP[cur], ax = a.x + a.w / 2, ay = a.y + 8;
+    let best = -1, bestD = 1e9;
+    REGION_MAP.forEach((r, i) => {
+      if (i === cur) return;
+      const rx = r.x + r.w / 2, ry = r.y + 8, ddx = rx - ax, ddy = ry - ay;
+      if (dx && (Math.sign(ddx) !== dx || Math.abs(ddy) > 30)) return;
+      if (dy && (Math.sign(ddy) !== dy || Math.abs(ddx) > 60)) return;
+      const d = Math.abs(ddx) + Math.abs(ddy);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best >= 0) { cur = best; Sound.fx("blip"); }
+  });
+}

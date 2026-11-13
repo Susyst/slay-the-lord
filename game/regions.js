@@ -36,8 +36,18 @@ Object.assign(TRAINERS, {
 
 // ---------------------------------------------------------------- the Hollow Wood (chapter 2)
 function buildHollow() {
-  const m = blankMap(56, 24, ".");
-  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 22, 55, 23, "T"); rect(m, 0, 0, 1, 23, "T"); rect(m, 54, 0, 55, 23, "T");
+  const m = blankMap(56, 32, ".");
+  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 30, 55, 31, "T"); rect(m, 0, 0, 1, 31, "T"); rect(m, 54, 0, 55, 31, "T");
+  // --- the sunken grove, where the wood drops away toward the marsh
+  rect(m, 2, 22, 53, 29, "T");                                        // close wood, then clear what the path needs
+  rect(m, 20, 23, 48, 28, "."); rect(m, 6, 24, 18, 28, ".");
+  rect(m, 18, 25, 20, 26, "."); rect(m, 22, 24, 30, 26, ";"); rect(m, 38, 24, 46, 27, ";"); rect(m, 7, 25, 16, 27, ";");
+  rect(m, 25, 27, 30, 28, "W"); m[28][24] = "W";                      // the pool sits west of the marsh road, not across it
+  for (const [x, y] of [[21, 23], [47, 23], [21, 28], [47, 28], [10, 24], [44, 28]]) { m[y][x] = "Q"; m[y][x + 1] = "Q"; m[y + 1][x] = "Q"; m[y + 1][x + 1] = "Q"; }
+  for (const [x, y] of [[24, 27], [28, 23], [42, 23], [12, 28], [37, 25], [19, 27]]) m[y][x] = "g";
+  for (const [x, y] of [[26, 28], [40, 23], [8, 24], [45, 25]]) m[y][x] = "r";
+  for (const [x, y] of [[31, 23], [48, 26], [6, 28]]) m[y][x] = "M";
+  m[26][17] = "C"; m[24][47] = "C";
   m[11][21] = "U";                                   // soul station at the waystation
   rect(m, 2, 2, 8, 6, "T"); rect(m, 2, 17, 10, 21, "T"); rect(m, 46, 15, 53, 21, "T"); rect(m, 47, 2, 53, 7, "T");
   // the road: east entrance, a bend north round the pond, the waystation, the west arch
@@ -78,6 +88,7 @@ function buildHollow() {
             { x0: 12, y0: 15, x1: 20, y1: 19, lv: [15, 19], mons: ["shadeling", "gloamcrow", "howlpup", "scrapling", "antennelle", "umbrafox", "mossfawn"] },
             { x0: 40, y0: 4, x1: 43, y1: 6, lv: [16, 20], mons: ["gloamcrow", "echit", "noxdrone", "shadeling", "beaconmoth"] },
             { x0: 25, y0: 5, x1: 28, y1: 7, lv: [15, 18], mons: ["lotadpole", "antennelle", "glimmote", "echit", "lilyhop"] }],
+    caches: [{ x: 17, y: 26, item: "kit", n: 2 }, { x: 47, y: 24, item: "rig", n: 2 }],
     heal: { x: 20, y: 13 },
     boss: { npc: "general2", flag: "beat_general2", trainer: "general2", bg: "hollow", zone: p => p.x <= 8 && p.y >= 10 && p.y <= 13,
             intro: ["MIRENE: Varrow fought with iron. How quaint. The Hollow fights with silence.",
@@ -90,8 +101,9 @@ function buildHollow() {
 
 // ---------------------------------------------------------------- the High Shrines (chapter 3)
 function buildShrines() {
-  const m = blankMap(56, 24, ".");
-  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 22, 55, 23, "T"); rect(m, 0, 0, 1, 23, "T"); rect(m, 54, 0, 55, 23, "T");
+  const m = blankMap(56, 32, ".");
+  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 30, 55, 31, "T"); rect(m, 0, 0, 1, 31, "T"); rect(m, 54, 0, 55, 31, "T");
+  rect(m, 2, 22, 53, 29, "k");                                        // everything below the terrace is raw mountain until it is cut
   // cliff terraces: the stair climbs west in switchbacks
   rect(m, 2, 2, 52, 4, "k"); rect(m, 2, 15, 20, 17, "k"); rect(m, 26, 15, 52, 17, "k"); rect(m, 2, 8, 10, 10, "k"); rect(m, 16, 8, 44, 10, "k"); rect(m, 50, 8, 52, 10, "k");
   rect(m, 2, 19, 10, 21, "k"); rect(m, 44, 19, 52, 21, "k");
@@ -108,6 +120,12 @@ function buildShrines() {
   for (const [x, y] of [[3, 6], [50, 6], [12, 20], [46, 20], [3, 13], [20, 20]]) { m[y][x] = "Q"; m[y][x + 1] = "Q"; m[y + 1][x] = "Q"; m[y + 1][x + 1] = "Q"; }
   const tents = [{ x: 27, y: 1, w: 3, h: 3, kind: "tent", side: "allied", door: [28, 4], clutter: [["crate", 5], ["barrel", 41]], text: "Shrine refuge. Allied scouts sleep in shifts here, under the eyes of the old stone keepers." }];
   for (let x = 27; x <= 29; x++) for (let y = 2; y <= 4; y++) m[y][x] = ".";
+  rect(m, 16, 22, 18, 24, "p"); rect(m, 12, 25, 42, 28, "p");         // the stair, and the court it falls into
+  rect(m, 24, 26, 32, 27, "W");                                       // the flooded middle; the court walks round it
+  rect(m, 13, 26, 20, 27, ";"); rect(m, 35, 26, 41, 27, ";");
+  for (const [x, y] of [[23, 26], [23, 27], [33, 26], [33, 27]]) m[y][x] = "r";   // stones flank the water, never the lanes
+  for (const [x, y] of [[12, 25], [42, 25], [12, 28], [42, 28]]) m[y][x] = "s";
+  m[28][14] = "C"; m[26][40] = "C";
   m[5][32] = "U";                                    // soul station beside the refuge
   return {
     id: "shrines", name: "THE HIGH SHRINES", music: "route", m, tents, bg: "shrine", mood: "night", pal: "shrine", tree: "pine", seed: 61,
@@ -129,7 +147,9 @@ function buildShrines() {
             { x0: 35, y0: 13, x1: 43, y1: 14, lv: [23, 27], mons: ["howlwing", "hummite", "stillhorn", "gorehog", "sonarix", "glimmote"] },
             { x0: 27, y0: 20, x1: 33, y1: 21, lv: [26, 30], mons: ["monolith", "wickwing", "siegeclad", "nirvanoad", "howlwing"] },
             { x0: 17, y0: 7, x1: 28, y1: 7, lv: [25, 29], mons: ["stillhorn", "sonarix", "beaconmoth", "ironclad", "wickwing"] },
-            { x0: 34, y0: 7, x1: 44, y1: 7, lv: [25, 29], mons: ["hummite", "gorehog", "howlwing", "lilyhop", "noxmech"] }],
+            { x0: 34, y0: 7, x1: 44, y1: 7, lv: [25, 29], mons: ["hummite", "gorehog", "howlwing", "lilyhop", "noxmech"] },
+            { x0: 13, y0: 26, x1: 20, y1: 27, lv: [27, 31], mons: ["monolith", "stillhorn", "hummite", "nirvanoad", "beaconmoth"] },
+            { x0: 35, y0: 26, x1: 41, y1: 27, lv: [27, 31], mons: ["wickwing", "siegeclad", "sonarix", "howlwing", "cairnhart"] }],
     heal: { x: 30, y: 6 },
     boss: { npc: "general3", flag: "beat_general3", trainer: "general3", bg: "shrine", zone: p => p.x <= 8 && p.y >= 10 && p.y <= 13,
             intro: ["THAL: Do you hear them? The old creatures, under the stones. I have kept them quiet for the Lord these twenty years.",

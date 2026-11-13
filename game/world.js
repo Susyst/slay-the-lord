@@ -10,8 +10,9 @@ function rect(m, x0, y0, x1, y1, c) { for (let y = y0; y <= y1; y++) for (let x 
 
 // ---------------------------------------------------------------- base camp
 function buildCamp() {
-  const m = blankMap(24, 18, ".");
-  for (let y = 0; y < 18; y++) for (let x = 0; x < 24; x++) if (y < 2 || y > 15 || x < 2 || x > 21) m[y][x] = "T";
+  const m = blankMap(44, 28, ".");
+  for (let y = 0; y < 28; y++) for (let x = 0; x < 44; x++) if (y < 2 || y > 25 || x < 2 || x > 41) m[y][x] = "T";
+  // --- the old camp, unchanged: the two roads, the fence line, the pond and the stores
   rect(m, 11, 3, 12, 13, ","); rect(m, 0, 12, 20, 13, ",");
   rect(m, 2, 2, 21, 2, "F"); rect(m, 9, 2, 14, 2, "S");
   rect(m, 15, 14, 20, 15, "W"); m[14][15] = "."; m[15][20] = ".";
@@ -19,40 +20,88 @@ function buildCamp() {
   rect(m, 2, 14, 3, 15, "Q");
   for (const [x, y] of [[14, 9], [15, 9], [14, 10], [15, 10], [15, 11], [9, 15], [10, 15], [11, 15], [12, 15]]) m[y][x] = ";";
   for (const [x, y] of [[3, 11], [8, 4], [9, 5], [20, 11], [6, 14], [13, 14], [21, 8]]) m[y][x] = "f";
+
+  // --- east: the drill yard, where the camp trains
+  rect(m, 20, 12, 40, 13, ",");                                        // the main road carries on east to the yard
+  rect(m, 24, 4, 40, 10, ","); rect(m, 24, 3, 40, 3, "F"); rect(m, 24, 11, 29, 11, "F"); rect(m, 33, 11, 40, 11, "F");
+  rect(m, 41, 4, 41, 10, "F");
+  for (const [x, y] of [[27, 5], [31, 5], [35, 5], [27, 9], [31, 9], [35, 9]]) m[y][x] = "S";   // straw targets down the yard
+  for (const [x, y] of [[38, 6], [38, 7], [39, 6]]) m[y][x] = "C";                                // the weapon racks
+  rect(m, 22, 5, 23, 10, "Q"); rect(m, 42, 12, 43, 20, "T");
+
+  // --- the stores, tucked between the yard and the south field
+  for (const [x, y] of [[23, 15], [24, 15], [23, 16], [25, 16], [24, 17]]) m[y][x] = "C";
+  rect(m, 21, 14, 22, 18, "F");
+
+  // --- south: the mustering field, the drinking pond and the reeds the recruits practise on
+  rect(m, 11, 14, 12, 24, ",");                                        // the north road carries on south to the field
+  rect(m, 5, 17, 10, 23, ";"); rect(m, 13, 17, 19, 23, ";"); rect(m, 26, 20, 33, 24, ";");
+  rect(m, 29, 15, 38, 19, "W"); rect(m, 28, 16, 28, 18, "W"); rect(m, 39, 16, 39, 18, "W");
+  rect(m, 34, 21, 40, 24, ";");
+  for (const [x, y] of [[4, 16], [20, 16], [4, 24], [20, 24], [25, 24], [41, 21]]) { m[y][x] = "Q"; m[y][x + 1] = "Q"; m[y + 1][x] = "Q"; m[y + 1][x + 1] = "Q"; }
+  for (const [x, y] of [[3, 19], [22, 22], [24, 19], [12, 25], [35, 20], [21, 20], [27, 17], [40, 15]]) m[y][x] = "f";
+  for (const [x, y] of [[8, 25], [16, 25], [30, 25], [37, 25], [3, 17], [41, 24]]) m[y][x] = "Q";
+
   const tents = [
     { x: 3, y: 3, w: 4, h: 4, kind: "hall", style: "hq", doorX: 35, door: null, open: true, windows: [10, 53], clutter: [["crate", 1], ["barrel", 54]] },
     { x: 17, y: 3, w: 4, h: 4, kind: "hall", style: "barracks", doorX: 35, door: null, open: true, windows: [10, 53], clutter: [["barrel", 1], ["crate", 52]] },
-    { x: 3, y: 9, w: 4, h: 3, kind: "hall", style: "infirmary", doorX: 35, door: null, open: true, windows: [10, 53], clutter: [["bucket", 2], ["stretcher", 44]] }];
+    { x: 3, y: 9, w: 4, h: 3, kind: "hall", style: "infirmary", doorX: 35, door: null, open: true, windows: [10, 53], clutter: [["bucket", 2], ["stretcher", 44]] },
+    { x: 30, y: 12, w: 3, h: 3, kind: "tent", side: "allied", door: [31, 15], clutter: [["barrel", 2]], text: "The sergeant's tent. A whetstone, a ledger of names, and a cot that has not been slept in." }];
   return {
     id: "camp", name: "ALLIED BASE CAMP", music: "camp", m, tents, bg: "field", mood: "day", tree: "round",
-    grass: [{ x0: 14, y0: 9, x1: 15, y1: 11, lv: [2, 4], mons: ["glimmote", "howlpup", "antennelle"] }, { x0: 9, y0: 15, x1: 12, y1: 15, lv: [2, 4], mons: ["lotadpole", "glimmote", "antennelle", "lilyhop"] }],
+    grass: [{ x0: 14, y0: 9, x1: 15, y1: 11, lv: [2, 4], mons: ["glimmote", "howlpup", "antennelle"] },
+            { x0: 9, y0: 15, x1: 12, y1: 15, lv: [2, 4], mons: ["lotadpole", "glimmote", "antennelle", "lilyhop"] },
+            { x0: 5, y0: 17, x1: 10, y1: 23, lv: [3, 5], mons: ["glimmote", "howlpup", "antennelle", "scrapling", "mossfawn"] },
+            { x0: 13, y0: 17, x1: 19, y1: 23, lv: [3, 5], mons: ["howlpup", "scrapling", "glimmote", "echit", "mossfawn"] },
+            { x0: 26, y0: 20, x1: 33, y1: 24, lv: [4, 6], mons: ["lotadpole", "lilyhop", "antennelle", "echit", "glimmote"] },
+            { x0: 34, y0: 21, x1: 40, y1: 24, lv: [4, 6], mons: ["scrapling", "howlpup", "noxdrone", "echit", "lilyhop"] }],
     props: [{ kind: "fire", x: 8, y: 14 }, { kind: "lamp", x: 10, y: 8 }, { kind: "lamp", x: 13, y: 8 }, { kind: "lamp", x: 19, y: 11 }, { kind: "lamp", x: 2, y: 11 },
-            { kind: "lamp", x: 13, y: 11 }, { kind: "sign", x: 9, y: 11, text: "ALLIED FRONT BASE CAMP. West road: the Western Front." }],
+            { kind: "lamp", x: 13, y: 11 }, { kind: "lamp", x: 26, y: 12 }, { kind: "lamp", x: 36, y: 12 }, { kind: "lamp", x: 13, y: 16 }, { kind: "fire", x: 24, y: 13 },
+            { kind: "banner", x: 24, y: 4 }, { kind: "banner", x: 40, y: 4 },
+            { kind: "sign", x: 9, y: 11, text: "ALLIED FRONT BASE CAMP. West road: the Western Front. East: the drill yard. South: the mustering field." },
+            { kind: "sign", x: 23, y: 12, text: "DRILL YARD. Recruits only past the fence. Live blades beyond the targets." },
+            { kind: "sign", x: 10, y: 16, text: "MUSTERING FIELD. The reeds are thick with small things. Good practice, and nobody dies." }],
     npcs: [
       { id: "voss", x: 7, y: 6, dir: "down", look: "commander", talk: "voss" },
       { id: "quarter", x: 16, y: 8, dir: "left", look: "quarter", talk: "quarter" },
       { id: "scout", x: 12, y: 3, dir: "down", look: "scout", lines: ["SCOUT: The north road is mined end to end.", "SCOUT: Our way in is west, through the front lines."] },
       { id: "oda", x: 4, y: 12, dir: "right", look: "rookie", talk: "oda" },
+      { id: "drillsgt", x: 31, y: 11, dir: "up", look: "officer", talk: "drillsgt" },
+      { id: "recruitA", x: 29, y: 6, dir: "right", look: "rookie", drill: true, lines: ["RECRUIT: Sergeant says a soul link is only as steady as the hand holding it.", "RECRUIT: Mine shakes. Hers doesn't. That's the whole difference."] },
+      { id: "recruitB", x: 33, y: 6, dir: "left", look: "rookie", drill: true, lines: ["RECRUIT: Straw doesn't hit back. That's rather the point of straw."] },
+      { id: "cook", x: 9, y: 14, dir: "right", look: "quarter", lines: ["COOK: Stew's on. It is always on. It has been on since the spring.", "COOK: Eat before you go west. Nobody comes back hungry, but they do come back thin."] },
+      { id: "angler", x: 27, y: 19, dir: "right", look: "rookie", talk: "angler" },
     ],
     warps: [{ x: -1, y: 12, to: "front", tx: 55, ty: 10, dir: "left" }, { x: -1, y: 13, to: "front", tx: 55, ty: 11, dir: "left" },
             { x: 5, y: 11, to: "infirmary", tx: 7, ty: 8, dir: "up" },
             { x: 5, y: 6, to: "hq", tx: 7, ty: 8, dir: "up" }, { x: 19, y: 6, to: "barracks", tx: 7, ty: 8, dir: "up" }],
+    caches: [{ x: 18, y: 9, item: "kit", n: 2 }, { x: 24, y: 17, item: "rig", n: 1 }, { x: 38, y: 7, item: "kit", n: 1 }],
     heal: { x: 6, y: 12 },
   };
 }
 
 // ---------------------------------------------------------------- the western front
 function buildFront() {
-  const m = blankMap(56, 22, ".");
-  rect(m, 38, 2, 55, 19, "b");
+  const m = blankMap(56, 30, ".");
+  rect(m, 38, 2, 55, 27, "b");
   m[10][30] = "U";                                   // soul station beside the outpost medic
-  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 20, 55, 21, "T"); rect(m, 54, 0, 55, 21, "T");
+  rect(m, 0, 0, 55, 1, "T"); rect(m, 0, 28, 55, 29, "T"); rect(m, 54, 0, 55, 29, "T");
   rect(m, 46, 3, 52, 8, ";"); rect(m, 25, 14, 33, 18, ";"); rect(m, 39, 13, 42, 17, ";");
-  rect(m, 36, 2, 37, 19, "W");
+  rect(m, 36, 2, 37, 27, "W");
   rect(m, 44, 10, 55, 11, ","); rect(m, 44, 5, 45, 11, ","); rect(m, 22, 5, 45, 6, ","); rect(m, 36, 5, 37, 6, "H");
   rect(m, 22, 5, 23, 14, ","); rect(m, 9, 10, 20, 17, "p"); rect(m, 9, 13, 23, 14, ",");
   rect(m, 9, 10, 20, 17, "p");
-  rect(m, 0, 2, 8, 19, "K");
+  rect(m, 0, 2, 8, 27, "K");
+  rect(m, 14, 17, 15, 26, ",");                                     // the supply track down from Outpost 7
+  rect(m, 12, 21, 33, 21, "w"); rect(m, 12, 22, 33, 23, "b");        // wire, then the trench itself
+  m[22][14] = ","; m[23][14] = ","; m[22][15] = ","; m[23][15] = ",";
+  rect(m, 9, 19, 13, 20, ";"); rect(m, 18, 25, 30, 26, ";"); rect(m, 31, 18, 35, 20, ";");
+  rect(m, 44, 20, 52, 25, ";"); rect(m, 39, 22, 42, 24, ";");
+  rect(m, 36, 24, 37, 24, "H");                                      // the lower crossing, planks over the water
+  for (const [x, y] of [[20, 19], [26, 18], [30, 24], [10, 25], [34, 26], [46, 19], [50, 26], [41, 20]]) m[y][x] = "c";
+  for (const [x, y] of [[17, 22], [24, 20], [28, 22], [12, 24], [43, 26], [48, 18]]) m[y][x] = "d";
+  for (const [x, y] of [[22, 26], [33, 25], [45, 27], [38, 19]]) m[y][x] = "R";
+  for (const [x, y] of [[16, 20], [27, 25], [47, 22], [52, 21]]) m[y][x] = "C";
   for (const [x, y] of [[49, 14], [52, 16], [41, 9]]) m[y][x] = "c";
   for (const [x, y] of [[47, 13], [48, 13], [53, 13], [40, 2], [41, 2], [12, 3], [18, 19]]) m[y][x] = "R";
   for (const [x, y] of [[50, 17], [42, 18], [39, 8], [30, 3], [17, 4]]) m[y][x] = "d";
@@ -82,9 +131,15 @@ function buildFront() {
             intro: ["VARROW: So. The Allied Front sends children with borrowed souls.", "VARROW: I have held the West for eleven years. Lord Hamon gave me this land, and I gave him its ashes.", "VARROW: Come, then. Let me show you what a real Warmon is."],
             after: ["VARROW: Impossible... the West... has never... fallen...", "Varrow collapses. A sealed order slips from his coat.", "\"...the Great Lord awaits in the eastern citadel. Hold the West at any cost.\""],
             chapter: [1, "THE GENERAL OF THE WEST HAS FALLEN", "The fortress gate stands open. Beyond it: the Hollow Wood."] },
-    grass: [{ x0: 46, y0: 3, x1: 52, y1: 8, lv: [3, 6], mons: ["howlpup", "glimmote", "scrapling", "antennelle", "shadeling"] },
+    grass: [{ x0: 9, y0: 19, x1: 13, y1: 20, lv: [4, 6], mons: ["howlpup", "glimmote", "scrapling", "mossfawn"] },
+            { x0: 18, y0: 25, x1: 30, y1: 26, lv: [5, 8], mons: ["howlpup", "scrapling", "antennelle", "gloamcrow", "echit"] },
+            { x0: 31, y0: 18, x1: 35, y1: 20, lv: [5, 8], mons: ["scrapling", "noxdrone", "glimmote", "shadeling"] },
+            { x0: 44, y0: 20, x1: 52, y1: 25, lv: [6, 9], mons: ["noxdrone", "gloamcrow", "scrapling", "tuskit", "shadeling"] },
+            { x0: 39, y0: 22, x1: 42, y1: 24, lv: [6, 9], mons: ["tuskit", "howlpup", "noxdrone", "echit"] },
+            { x0: 46, y0: 3, x1: 52, y1: 8, lv: [3, 6], mons: ["howlpup", "glimmote", "scrapling", "antennelle", "shadeling"] },
             { x0: 39, y0: 13, x1: 42, y1: 17, lv: [5, 8], mons: ["gloamcrow", "noxdrone", "tuskit", "shadeling"] },
             { x0: 25, y0: 14, x1: 33, y1: 18, lv: [7, 10], mons: ["lotadpole", "tuskit", "howlpup", "antennelle", "glimmote"] }],
+    caches: [{ x: 16, y: 20, item: "kit", n: 1 }, { x: 27, y: 25, item: "rig", n: 1 }, { x: 47, y: 22, item: "kit", n: 2 }, { x: 52, y: 21, item: "rig", n: 1 }],
     heal: { x: 29, y: 12 },
   };
 }
@@ -238,6 +293,20 @@ const World = {
       return;
     }
     if (n.talk === "voss") return this.vossTalk();
+    if (n.talk === "drillsgt") {
+      if (Game.flags.drilled) return say("SERGEANT: South field, then the west road. In that order, if you want to come back.");
+      Game.flags.drilled = true; Game.bag.kit += 2; Sound.fx("capture");
+      await say("SERGEANT: You're the one Voss is sending west. Good. Then you hear this once.");
+      await say("SERGEANT: A link holds while you hold. It frays the moment you flinch. Straw does not teach you that. The reeds south of camp do.");
+      return say("SERGEANT: Two FIELD KITS. Go and get bitten a few times before the Dominion does it for you.");
+    }
+    if (n.talk === "angler") {
+      if (Game.flags.angler) return say("ANGLER: Far bank, past the pond. Those reeds move against the wind.");
+      Game.flags.angler = true; Game.bag.rig += 1; Sound.fx("capture");
+      await say("ANGLER: Nothing bites here any more. Not since the camp started drawing its water off the pond.");
+      await say("ANGLER: Still. Something keeps shifting the reeds on the far bank, and I am too old to go and look.");
+      return say("ANGLER: Take a SOUL LINK. Whatever is moving them is yours, not mine.");
+    }
     if (n.talk === "oda") return say(Game.flags.starter ? "ODA: The front is due west. Hold B to move at double time. Wild mons hide in the tall grass, even here in camp, so keep a Link handy." : "ODA: Report to Commander Voss at the command tent first.");
     if (n.talk === "quarter") {
       if (!Game.flags.starter) return say("QUARTERMASTER: Get your orders from the Commander, then come see me.");
@@ -457,7 +526,7 @@ const World = {
   },
   menuOpts() {
     const ride = Game.flags.board && !this.map.interior ? [Game.riding ? "DISMOUNT" : "BOARD"] : [];
-    return ["SQUAD", "BAG", "KIT", "ORDERS", ...ride, "SAVE", "OPTIONS", "EXIT"];
+    return ["SQUAD", "BAG", "KIT", "MAP", "ORDERS", ...ride, "SAVE", "OPTIONS", "EXIT"];
   },
 
   // ---------------------------------------------------------------- drawing

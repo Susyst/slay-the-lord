@@ -25,6 +25,10 @@ function roughen(m, c, over, seed, grow = 0.38, eat = 0.22, guard = NEAR_ROAD) {
 
 // ---------------------------------------------------------------- trainers
 Object.assign(TRAINERS, {
+  mire:  { name: "GRUNT MIRE", look: "grunt", team: [["scrapling", 7], ["howlpup", 7]],
+           intro: "Nobody comes down the supply track. Nobody but you, apparently.", lose: "Take the trench. It is full of water and rats anyway." },
+  cobb:  { name: "GRUNT COBB", look: "grunt", team: [["noxdrone", 8], ["gloamcrow", 8]],
+           intro: "Across the water is ours. This side was supposed to be ours too.", lose: "Fine. Have the mud." },
   dune:  { name: "GRUNT DUNE", look: "grunt", team: [["howlpup", 11], ["scrapling", 11]],
            intro: "The pits are closed. Foreman's orders. Nobody digs but us.", lose: "Fine, dig. There's nothing down there but bones and old iron." },
   pike:  { name: "GRUNT PIKE", look: "grunt", team: [["noxdrone", 12], ["gloamcrow", 12]],
@@ -37,6 +41,8 @@ Object.assign(TRAINERS, {
            intro: "The Warden says there's something holy out on the far island. Says it like that's a bad thing.", lose: "Don't go out there. Please. It looks at you." },
   salt:  { name: "WARDEN SALT", look: "officer", team: [["lilyhop", 22], ["umbrafox", 22], ["hummite", 23]],
            intro: "Mirene sent me to drown whatever lives on that island. Three months. Not one of my Warmons will cross the last bridge.", lose: "Cross it yourself, then. Tell the Queen I tried." },
+  nenn:  { name: "KEEPER NENN", look: "keeper", team: [["nirvanoad", 28], ["monolith", 29]],
+           intro: "The lower court was flooded on purpose. What is under the water was not meant to be walked on.", lose: "Walk on it, then. It has waited longer than either of us." },
   vesk:  { name: "GRUNT VESK", look: "grunt", team: [["siegeclad", 30], ["wickwing", 30]],
            intro: "Thal says the wind up here talks. I say it's just wind. Either way, you're not going up.", lose: "Hear that? ...No? Lucky you." },
   ora:   { name: "GRUNT ORA", look: "grunt", team: [["gorehog", 31], ["sonarix", 31]],
@@ -217,13 +223,26 @@ MAPS.cinder = buildCinder(); MAPS.marsh = buildMarsh(); MAPS.ridge = buildRidge(
 {
   const F = MAPS.front; rect(F.m, 46, 0, 49, 1, "b"); rect(F.m, 46, 2, 49, 2, "b");
   F.warps.push({ x: 47, y: -1, to: "cinder", tx: 47, ty: 21, dir: "up" }, { x: 48, y: -1, to: "cinder", tx: 48, ty: 21, dir: "up" });
-  F.props.push({ kind: "sign", x: 45, y: 2, text: "North: Dominion Quarry 3, the Cinder Pits. Allied personnel keep out. (Someone has scratched out the last line.)" });
-  const Hm = MAPS.hollow; rect(Hm.m, 33, 22, 36, 23, "."); for (let y = 14; y <= 21; y++) for (let x = 34; x <= 35; x++) if (Hm.m[y][x] === "." || Hm.m[y][x] === "g") Hm.m[y][x] = ",";
-  Hm.warps.push({ x: 34, y: 24, to: "marsh", tx: 34, ty: 2, dir: "down" }, { x: 35, y: 24, to: "marsh", tx: 35, ty: 2, dir: "down" });
-  Hm.props.push({ kind: "sign", x: 33, y: 14, text: "South: the Drowned Marsh. The waystation does not send patrols there any more." });
+  F.npcs.push(
+    { id: "mire", x: 20, y: 22, dir: "right", look: "grunt", trainer: "mire", sight: 3 },
+    { id: "cobb", x: 46, y: 23, dir: "left", look: "grunt", trainer: "cobb", sight: 3 },
+    { id: "digger", x: 15, y: 25, dir: "up", look: "rookie", talk: "digger" });
+  F.props.push({ kind: "fire", x: 34, y: 26 }, { kind: "lamp", x: 14, y: 18 },
+    { kind: "sign", x: 13, y: 17, text: "SUPPLY TRACK. The old trench line is below. Mind the wire." },
+    { kind: "sign", x: 45, y: 2, text: "North: Dominion Quarry 3, the Cinder Pits. Allied personnel keep out. (Someone has scratched out the last line.)" });
+  const Hm = MAPS.hollow; rect(Hm.m, 33, 30, 36, 31, ".");
+  for (let y = 14; y <= 31; y++) for (let x = 34; x <= 35; x++) if (["." , "g", "T", ";"].includes(Hm.m[y][x])) Hm.m[y][x] = ",";
+  Hm.warps.push({ x: 34, y: 32, to: "marsh", tx: 34, ty: 2, dir: "down" }, { x: 35, y: 32, to: "marsh", tx: 35, ty: 2, dir: "down" });
+  Hm.props.push({ kind: "sign", x: 33, y: 14, text: "South: the sunken grove, then the Drowned Marsh. The waystation does not send patrols there any more." });
   const S = MAPS.shrines; rect(S.m, 15, 0, 18, 4, "p"); rect(S.m, 15, 0, 18, 1, "p");
   S.warps.push({ x: 16, y: -1, to: "ridge", tx: 16, ty: 21, dir: "up" }, { x: 17, y: -1, to: "ridge", tx: 17, ty: 21, dir: "up" });
-  S.props.push({ kind: "sign", x: 14, y: 5, text: "North stair: the Windward Ridge. The Keeper's men hold it. The lanterns were lit by someone else." });
+  S.npcs.push(
+    { id: "nenn", x: 28, y: 25, dir: "down", look: "keeper", trainer: "nenn", sight: 4 },
+    { id: "bellring", x: 20, y: 27, dir: "right", look: "keeper", talk: "bellring" });
+  S.caches = [{ x: 14, y: 28, item: "rig", n: 2 }, { x: 40, y: 26, item: "kit", n: 3 }];
+  S.props.push({ kind: "brazier", x: 17, y: 25 }, { kind: "brazier", x: 37, y: 25 },
+    { kind: "sign", x: 19, y: 22, text: "THE LOWER COURT. Flooded by the Keepers, and not by accident." },
+    { kind: "sign", x: 14, y: 5, text: "North stair: the Windward Ridge. The Keeper's men hold it. The lanterns were lit by someone else." });
   for (const id of ["front", "hollow", "shrines"]) MAPS[id].paint = null;
 }
 
@@ -279,6 +298,15 @@ World.talk = async function (n) {
     else await say("It settles back among the stones, watching you.");
     Game.autosave(); return;
   }
+  if (n.talk === "digger") {
+    if (!F.digger) {
+      F.digger = true; Game.bag.kit += 2; Sound.fx("capture");
+      await say("DIGGER: Eleven years this trench has been here. I have dug it, filled it, and dug it again.");
+      await say("DIGGER: You're going west, then. Past the gate. Nobody who goes west digs again, one way or the other.");
+      return say("DIGGER: Two FIELD KITS from the stores. The quartermaster will not miss them and I will not tell him.");
+    }
+    return say("DIGGER: Wire's mine, trench is mine, mud's mine. The war can have the rest.");
+  }
   if (n.talk === "sapper") {
     if (!F.beat_brunt) return say("SAPPER: Allied engineer, third sappers. They took my squad for the forges. Foreman keeps the key on him. Get it and I can walk.");
     if (F.sapper) return say("SAPPER: I'm heading back to Outpost 7 the long way. If the pits ever open again, burn them.");
@@ -294,6 +322,15 @@ World.talk = async function (n) {
     await say("FEN-WIFE: Before the war, folk crossed this marsh to pray to a great frog on the far island. We called it the Saint. The Dominion calls it a target.");
     await say("FEN-WIFE: Their Warden cannot get his iron beasts across the last bridge. They will not go. Something in the water tells them no.");
     return say("FEN-WIFE: Take these two SOUL LINKS. If the Saint chooses you, the Queen in the wood will have one less thing to drown.");
+  }
+  if (n.talk === "bellring") {
+    if (!F.bellring) {
+      F.bellring = true; Game.bag.kit += 3; Sound.fx("capture");
+      await say("BELL-KEEPER: Down here the bell is under the water. You can still hear it when the wind drops.");
+      await say("BELL-KEEPER: Thal flooded the court the week he took the shrines. He said it was to stop the singing.");
+      return say("BELL-KEEPER: It did not stop. Three FIELD KITS, and my thanks for climbing down.");
+    }
+    return say("BELL-KEEPER: Stand still a moment. There. Under the water. That is the bell.");
   }
   if (n.talk === "pilgrim") {
     if (F.gone_voice) return say("PILGRIM: The mountain is singing again. I can go home now. I think I can go home.");

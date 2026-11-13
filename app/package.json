@@ -1,6 +1,6 @@
 {
   "name": "slay-the-lord",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "scripts": {
     "tauri": "tauri"
   },
